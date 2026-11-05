@@ -1,0 +1,44 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["static/vendor", "data", "models", ".venv"]
+
+[tool.ruff.lint]
+# E/F 是硬错误；I 是导入排序；UP 是语法现代化；B 是常见陷阱
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+    "E501",  # 行宽交给 format 决定，中文注释按显示宽度判断容易误报
+    "E402",  # tests/conftest.py 需要先 sys.path.insert 再导入 app
+    "B008",  # FastAPI 的 Depends()/File() 默认值写法是有意为之
+    "B904",  # 部分 raise ... from 为兼容旧写法暂不强制
+    "E741",  # 大量 `for l in laws` 风格；改名属纯风格改动，不纳入合并门槛
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+# tools/ 下的是一次性维护脚本（抓取、解析、校验），保留紧凑的多语句写法
+"tools/*" = ["E402", "E701", "E702", "E741", "E731", "F841", "B007", "UP031"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    "ignore::DeprecationWarning:starlette.*",
+    "ignore::DeprecationWarning:anyio.*",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/__init__.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
