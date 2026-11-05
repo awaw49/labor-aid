@@ -1,0 +1,398 @@
+{
+ "version": "3.0",
+ "updated": "2026-11-03",
+ "blocking": [
+  {
+   "id": "employer_name",
+   "label": "用人单位全称",
+   "type": "text",
+   "priority": 1,
+   "why": "申请书第一行就得写清楚告谁，写错了立不上案。",
+   "question": "你上班那家公司，营业执照上的全名是什么？",
+   "placeholder": "例：杭州云帆科技有限公司",
+   "chips": [],
+   "help": "看劳动合同封面、工资条抬头、工牌、个税 App 里的“扣缴义务人”，或问 HR 要营业执照照片。"
+  },
+  {
+   "id": "employer_city",
+   "label": "单位所在地 / 上班地点",
+   "type": "city",
+   "priority": 1,
+   "why": "得看归哪个仲裁委管。口径目前覆盖北上广深杭五城。",
+   "question": "上班的地方在哪个城市？",
+   "chips": [
+    {
+     "value": "杭州市",
+     "label": "杭州市"
+    },
+    {
+     "value": "北京市",
+     "label": "北京市"
+    },
+    {
+     "value": "上海市",
+     "label": "上海市"
+    },
+    {
+     "value": "广州市",
+     "label": "广州市"
+    },
+    {
+     "value": "深圳市",
+     "label": "深圳市"
+    },
+    {
+     "value": "其他城市",
+     "label": "其他城市"
+    }
+   ],
+   "help": "按实际工作地点回答即可。五城之外的城市会明确告知覆盖范围并指路当地仲裁委。"
+  },
+  {
+   "id": "start_date",
+   "label": "入职日期",
+   "type": "date",
+   "priority": 2,
+   "why": "干满几年，直接决定能要几个月工资。",
+   "question": "哪天开始上的班？记个大概日子也行。",
+   "placeholder": "例：2023-04-01",
+   "chips": [],
+   "help": "看劳动合同起始日、第一个月工资发放记录、社保首次缴纳月份、入职登记表。"
+  },
+  {
+   "id": "end_date",
+   "label": "离职日期",
+   "type": "date",
+   "priority": 2,
+   "why": "时效从这天起算，差一天都不一样。",
+   "question": "最后一天上班是哪天？要是还在干，就说还在职。",
+   "placeholder": "例：2026-03-15",
+   "chips": [
+    {
+     "value": "still_employed",
+     "label": "我还在职，没有离职日"
+    }
+   ],
+   "help": "看解除通知日期、离职证明、最后一个月工资、社保停缴月份。"
+  },
+  {
+   "id": "termination_by",
+   "label": "谁提出的解除",
+   "type": "enum",
+   "priority": 2,
+   "why": "这题最要命：公司让你走的才有 2N，自己提的一般什么都没有。",
+   "question": "这活儿是怎么结束的——公司让你走的，还是你自己提的？",
+   "chips": [
+    {
+     "value": "employer",
+     "label": "公司让我走的"
+    },
+    {
+     "value": "employee",
+     "label": "我自己辞职的"
+    },
+    {
+     "value": "mutual",
+     "label": "协商一致走的"
+    },
+    {
+     "value": "unknown",
+     "label": "我不确定"
+    }
+   ],
+   "help": "回看微信/钉钉里 HR 的说法、解除通知、离职证明上写的原因；“公司劝我辞职”通常仍属单位提出。"
+  },
+  {
+   "id": "termination_reason",
+   "label": "解除理由",
+   "type": "text",
+   "priority": 3,
+   "why": "公司给的理由站不站得住，决定是 N 还是 2N。",
+   "question": "当时公司是怎么跟你说的？原话就行。",
+   "placeholder": "例：试用期不合格 / 旷工 / 公司裁员 / 没给理由",
+   "chips": [
+    {
+     "value": "试用期不合格",
+     "label": "试用期不合格"
+    },
+    {
+     "value": "严重违纪",
+     "label": "严重违纪"
+    },
+    {
+     "value": "裁员/经营困难",
+     "label": "裁员/经营困难"
+    },
+    {
+     "value": "没给任何理由",
+     "label": "没给任何理由"
+    }
+   ],
+   "help": "以书面通知为准；口头辞退可截图聊天记录，或录下谈话（自己参与的谈话录音合法）。"
+  },
+  {
+   "id": "contract_state",
+   "label": "书面劳动合同情况",
+   "type": "enum",
+   "priority": 3,
+   "why": "一次没签，能多要一倍工资。",
+   "question": "跟公司签过书面合同吗？",
+   "chips": [
+    {
+     "value": "none",
+     "label": "一次都没签"
+    },
+    {
+     "value": "one",
+     "label": "签过 1 次"
+    },
+    {
+     "value": "two_plus",
+     "label": "签过 2 次及以上"
+    },
+    {
+     "value": "unknown",
+     "label": "我不确定"
+    }
+   ],
+   "help": "看自己手里有没有合同原件；也可在“浙里办—社保查询”看用工备案，或直接问 HR 要一份复印件。"
+  },
+  {
+   "id": "avg_wage",
+   "label": "近 12 个月平均应发工资",
+   "type": "money",
+   "priority": 3,
+   "why": "赔多少按这个数算，说少了亏的是你。",
+   "question": "走之前这一年，平均一个月应发多少？扣社保之前的那个数。",
+   "placeholder": "例：8600",
+   "chips": [],
+   "help": "打开“个人所得税”App → 收入纳税明细查询，能看到单位申报的每月收入；或看工资条“应发合计”。"
+  },
+  {
+   "id": "dispute_types",
+   "label": "争议类型",
+   "type": "multi",
+   "priority": 1,
+   "why": "选的路子不一样，要带的材料也不一样。",
+   "question": "这回你想解决的是哪几件事？可以多选。",
+   "chips": [
+    {
+     "value": "unpaid_wage",
+     "label": "欠工资"
+    },
+    {
+     "value": "termination",
+     "label": "被辞退/赔偿"
+    },
+    {
+     "value": "no_contract",
+     "label": "没签合同"
+    },
+    {
+     "value": "overtime",
+     "label": "加班费"
+    },
+    {
+     "value": "annual_leave",
+     "label": "年休假"
+    },
+    {
+     "value": "social_insurance",
+     "label": "社保"
+    },
+    {
+     "value": "noncompete",
+     "label": "竞业限制"
+    },
+    {
+     "value": "other",
+     "label": "其他"
+    }
+   ],
+   "help": "不确定就先把事实说出来，系统会按事实归类，再请你确认。"
+  },
+  {
+   "id": "prior_proceeding",
+   "label": "是否已经走过程序",
+   "type": "enum",
+   "priority": 2,
+   "why": "同一件事裁过一次，一般就不给再裁了。",
+   "question": "这事儿之前仲裁过、起诉过，或者跟公司签过和解？",
+   "chips": [
+    {
+     "value": "none",
+     "label": "都没有"
+    },
+    {
+     "value": "arbitration_done",
+     "label": "仲裁过，已有裁决书"
+    },
+    {
+     "value": "court_done",
+     "label": "起诉过，已有判决/调解书"
+    },
+    {
+     "value": "settled",
+     "label": "签过和解/调解协议"
+    }
+   ],
+   "help": "看手里有没有裁决书、调解书、判决书；协议是否有欺诈、胁迫、重大误解会影响能否反悔。"
+  },
+  {
+   "id": "still_employed",
+   "label": "现在是否仍在职",
+   "type": "enum",
+   "priority": 2,
+   "why": "在职还是已经走了，能要的东西和时效算法不一样。",
+   "question": "现在还在这儿上班吗？",
+   "chips": [
+    {
+     "value": "yes",
+     "label": "还在职"
+    },
+    {
+     "value": "no",
+     "label": "已经离职"
+    },
+    {
+     "value": "unknown",
+     "label": "说不清（停薪留职/待岗）"
+    }
+   ],
+   "help": "以是否仍在提供劳动、是否还在发工资/缴社保为准。"
+  },
+  {
+   "id": "claims",
+   "label": "诉求清单",
+   "type": "multi",
+   "priority": 2,
+   "why": "申请书上得写清楚要什么，写歪了会被驳回或另案。",
+   "question": "你心里想要个什么结果？",
+   "chips": [
+    {
+     "value": "compensation_2n",
+     "label": "违法解除赔偿金 2N"
+    },
+    {
+     "value": "compensation_n",
+     "label": "经济补偿 N"
+    },
+    {
+     "value": "double_wage",
+     "label": "未签合同二倍工资"
+    },
+    {
+     "value": "wage",
+     "label": "补发工资/加班费"
+    },
+    {
+     "value": "annual_leave_pay",
+     "label": "未休年假工资"
+    },
+    {
+     "value": "confirm_relation",
+     "label": "确认劳动关系"
+    },
+    {
+     "value": "unsure",
+     "label": "我不确定能要什么"
+    }
+   ],
+   "help": "选“我不确定”也可以，系统会按事实给出可主张项，但最终请求由你自己决定。"
+  }
+ ],
+ "optional": [
+  {
+   "id": "overtime_evidence",
+   "label": "加班证据",
+   "type": "enum",
+   "question": "加班有打卡记录、排班表或领导安排加班的聊天记录吗？",
+   "chips": [
+    {
+     "value": "strong",
+     "label": "有打卡/系统记录"
+    },
+    {
+     "value": "chat",
+     "label": "只有聊天记录"
+    },
+    {
+     "value": "none",
+     "label": "没有"
+    }
+   ],
+   "why": "加班这事得你先拿出点东西；考勤在单位手里的，让他们举证。",
+   "help": "企业微信/钉钉的考勤导出、排班表截图、工作群里的加班安排。"
+  },
+  {
+   "id": "company_status",
+   "label": "单位经营状态",
+   "type": "enum",
+   "question": "公司现在还在正常经营吗？",
+   "chips": [
+    {
+     "value": "normal",
+     "label": "正常经营"
+    },
+    {
+     "value": "abnormal",
+     "label": "已经停业/老板跑路"
+    },
+    {
+     "value": "unknown",
+     "label": "不清楚"
+    }
+   ],
+   "why": "公司要是个空壳，赢了也拿不到钱。",
+   "help": "用「电子营业执照」小程序查公司全称，或到仲裁窗口请工作人员查经营状态（注销、吊销、经营异常）"
+  },
+  {
+   "id": "special_status",
+   "label": "特殊保护情形",
+   "type": "multi",
+   "question": "你是否处于孕期/产期/哺乳期、医疗期或工伤停工留薪期？",
+   "chips": [
+    {
+     "value": "pregnancy",
+     "label": "三期"
+    },
+    {
+     "value": "medical",
+     "label": "医疗期"
+    },
+    {
+     "value": "work_injury",
+     "label": "工伤"
+    },
+    {
+     "value": "none",
+     "label": "都没有"
+    }
+   ],
+   "why": "三期、医疗期、工伤期间，单位想解除是受限的。",
+   "help": "以医院诊断证明、工伤认定书为准。"
+  },
+  {
+   "id": "wage_payment_form",
+   "label": "工资发放形式",
+   "type": "enum",
+   "question": "工资是怎么发的？",
+   "chips": [
+    {
+     "value": "bank",
+     "label": "公户转账"
+    },
+    {
+     "value": "personal",
+     "label": "老板个人账户/微信转账"
+    },
+    {
+     "value": "cash",
+     "label": "现金"
+    }
+   ],
+   "why": "走老板私人账户或者发现金，劳动关系和工资都不好证。",
+   "help": "看银行流水对方户名、微信转账记录。"
+  }
+ ]
+}

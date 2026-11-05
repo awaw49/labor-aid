@@ -1,0 +1,1731 @@
+{
+ "metrics": {
+  "scope_acc": 1.0,
+  "qual_acc": 1.0,
+  "gate_all_acc": 1.0,
+  "decision_acc": 1.0,
+  "deadline_acc": 1.0,
+  "materials_recall": 0.9714285714285714,
+  "venue_acc": 1.0,
+  "citation_recall": 1.0,
+  "citation_precision": 1.0,
+  "hallucination_rate": 0.0,
+  "interception_ok": true
+ },
+ "rows": [
+  {
+   "id": "E01",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "id_card"
+   ],
+   "hit_materials": [
+    "id_card"
+   ],
+   "gold_articles": [
+    "shebaofa:63"
+   ],
+   "hit_articles": [
+    "shebaofa:63"
+   ],
+   "cited": 5,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "cannot",
+    "scope": "out_of_scope",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "shebaofa:58",
+     "shebaofa:63",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E02",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [],
+   "hit_materials": [],
+   "gold_articles": [],
+   "hit_articles": [],
+   "cited": 3,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "cannot",
+    "scope": "out_of_scope",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E03",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [],
+   "hit_materials": [],
+   "gold_articles": [],
+   "hit_articles": [],
+   "cited": 4,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "cannot",
+    "scope": "out_of_scope",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "gongshang:17",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E04",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [],
+   "hit_materials": [],
+   "gold_articles": [],
+   "hit_articles": [],
+   "cited": 6,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "cannot",
+    "scope": "out_of_scope",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E05",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [],
+   "hit_materials": [],
+   "gold_articles": [],
+   "hit_articles": [],
+   "cited": 5,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "cannot",
+    "scope": "out_of_scope",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:30",
+     "laodonghetongfa:50",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E06",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [],
+   "hit_materials": [],
+   "gold_articles": [
+    "jiancha:9"
+   ],
+   "hit_articles": [
+    "jiancha:9"
+   ],
+   "cited": 6,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "cannot",
+    "scope": "out_of_scope",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "jiancha:9",
+     "laodongfa:41",
+     "laodongfa:44",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E07",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "si_record"
+   ],
+   "hit_materials": [
+    "si_record"
+   ],
+   "gold_articles": [
+    "shebaofa:63"
+   ],
+   "hit_articles": [
+    "shebaofa:63"
+   ],
+   "cited": 6,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:50",
+     "shebaofa:58",
+     "shebaofa:63",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E08",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [],
+   "hit_materials": [],
+   "gold_articles": [
+    "tiaojiezhongcai:27"
+   ],
+   "hit_articles": [
+    "tiaojiezhongcai:27"
+   ],
+   "cited": 7,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "cannot",
+    "scope": "pass",
+    "qual": "fail",
+    "deadline": "2026-03-01",
+    "days": -248,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48"
+    ]
+   }
+  },
+  {
+   "id": "E09",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [],
+   "hit_materials": [],
+   "gold_articles": [
+    "sfjs1:6"
+   ],
+   "hit_articles": [
+    "sfjs1:6"
+   ],
+   "cited": 7,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "cannot",
+    "scope": "pass",
+    "qual": "fail",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "sfjs1:6",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E10",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "termination_notice"
+   ],
+   "hit_materials": [
+    "termination_notice"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:87"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:87"
+   ],
+   "cited": 6,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "warn",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E11",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [],
+   "hit_materials": [],
+   "gold_articles": [
+    "laodonghetongfa:87"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:87"
+   ],
+   "cited": 6,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "not_recommended",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E12",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [],
+   "hit_materials": [],
+   "gold_articles": [],
+   "hit_articles": [],
+   "cited": 6,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "not_recommended",
+    "scope": "pass",
+    "qual": "warn",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E13",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [],
+   "hit_materials": [],
+   "gold_articles": [],
+   "hit_articles": [],
+   "cited": 8,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "not_recommended",
+    "scope": "pass",
+    "qual": "warn",
+    "deadline": "2027-10-01",
+    "days": 331,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E14",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "termination_notice"
+   ],
+   "hit_materials": [
+    "termination_notice"
+   ],
+   "gold_articles": [
+    "tiaojiezhongcai:27"
+   ],
+   "hit_articles": [
+    "tiaojiezhongcai:27"
+   ],
+   "cited": 6,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-08-01",
+    "days": 270,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E15",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "termination_notice"
+   ],
+   "hit_materials": [
+    "termination_notice"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:87"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:87"
+   ],
+   "cited": 6,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-10-01",
+    "days": 331,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E16",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "termination_notice"
+   ],
+   "hit_materials": [
+    "termination_notice"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:87"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:87"
+   ],
+   "cited": 6,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E17",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "termination_notice"
+   ],
+   "hit_materials": [
+    "termination_notice"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:46"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:46"
+   ],
+   "cited": 9,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:39",
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E18",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "id_card"
+   ],
+   "hit_materials": [
+    "id_card"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:37"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:37"
+   ],
+   "cited": 7,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "not_recommended",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:37",
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E19",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "si_record"
+   ],
+   "hit_materials": [
+    "si_record"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:38",
+    "laodonghetongfa:46"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:38",
+    "laodonghetongfa:46"
+   ],
+   "cited": 11,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:38",
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "shebaofa:58",
+     "shebaofa:63",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E20",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "termination_notice"
+   ],
+   "hit_materials": [
+    "termination_notice"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:87"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:87"
+   ],
+   "cited": 6,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E21",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "termination_notice"
+   ],
+   "hit_materials": [
+    "termination_notice"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:42",
+    "laodonghetongfa:87"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:42",
+    "laodonghetongfa:87"
+   ],
+   "cited": 9,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-08-01",
+    "days": 270,
+    "articles": [
+     "laodonghetongfa:30",
+     "laodonghetongfa:42",
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:50",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E22",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [],
+   "hit_materials": [],
+   "gold_articles": [
+    "laodonghetongfa:39"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:39"
+   ],
+   "cited": 9,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "not_recommended",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:39",
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E23",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "termination_notice"
+   ],
+   "hit_materials": [
+    "termination_notice"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:36",
+    "laodonghetongfa:46"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:36",
+    "laodonghetongfa:46"
+   ],
+   "cited": 9,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:36",
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E24",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "termination_notice"
+   ],
+   "hit_materials": [
+    "termination_notice"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:82"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:82"
+   ],
+   "cited": 10,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-10-01",
+    "days": 331,
+    "articles": [
+     "laodonghetongfa:10",
+     "laodonghetongfa:14",
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:82",
+     "laodonghetongfa:87",
+     "sfjs2:6",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E25",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "badge"
+   ],
+   "hit_materials": [
+    "badge"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:82",
+    "sfjs2:6"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:82",
+    "sfjs2:6"
+   ],
+   "cited": 9,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-06-01",
+    "days": 209,
+    "articles": [
+     "laodonghetongfa:10",
+     "laodonghetongfa:14",
+     "laodonghetongfa:82",
+     "sfjs2:6",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E26",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "relation"
+   ],
+   "hit_materials": [
+    "relation"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:46"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:46"
+   ],
+   "cited": 9,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-08-31",
+    "days": 300,
+    "articles": [
+     "laodonghetongfa:39",
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E27",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "relation"
+   ],
+   "hit_materials": [
+    "relation"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:14"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:14"
+   ],
+   "cited": 7,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:10",
+     "laodonghetongfa:14",
+     "laodonghetongfa:82",
+     "sfjs2:6",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E28",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "bank_flow"
+   ],
+   "hit_materials": [
+    "bank_flow"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:50"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:50"
+   ],
+   "cited": 8,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": null,
+    "days": null,
+    "articles": [
+     "laodongfa:50",
+     "laodonghetongfa:30",
+     "laodonghetongfa:50",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E29",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "bank_flow"
+   ],
+   "hit_materials": [
+    "bank_flow"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:50"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:50"
+   ],
+   "cited": 8,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "better_alternative",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodongfa:50",
+     "laodonghetongfa:30",
+     "laodonghetongfa:50",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E30",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "attendance"
+   ],
+   "hit_materials": [
+    "attendance"
+   ],
+   "gold_articles": [
+    "laodongfa:44"
+   ],
+   "hit_articles": [
+    "laodongfa:44"
+   ],
+   "cited": 6,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "not_recommended",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodongfa:41",
+     "laodongfa:44",
+     "laodonghetongfa:50",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E31",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "attendance"
+   ],
+   "hit_materials": [
+    "attendance"
+   ],
+   "gold_articles": [
+    "laodongfa:44"
+   ],
+   "hit_articles": [
+    "laodongfa:44"
+   ],
+   "cited": 8,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodongfa:41",
+     "laodongfa:44",
+     "laodonghetongfa:50",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E32",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "leave_record"
+   ],
+   "hit_materials": [
+    "leave_record"
+   ],
+   "gold_articles": [
+    "nianxiujia:5"
+   ],
+   "hit_articles": [
+    "nianxiujia:5"
+   ],
+   "cited": 7,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "nianxiujia:3",
+     "nianxiujia:5",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E33",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "si_record"
+   ],
+   "hit_materials": [
+    "si_record"
+   ],
+   "gold_articles": [
+    "shebaofa:63"
+   ],
+   "hit_articles": [
+    "shebaofa:63"
+   ],
+   "cited": 6,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:50",
+     "shebaofa:58",
+     "shebaofa:63",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E34",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "noncompete_agreement"
+   ],
+   "hit_materials": [
+    "noncompete_agreement"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:24"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:24"
+   ],
+   "cited": 5,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "not_recommended",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:23",
+     "laodonghetongfa:24",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E35",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "noncompete_agreement"
+   ],
+   "hit_materials": [
+    "noncompete_agreement"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:23"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:23"
+   ],
+   "cited": 5,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "not_recommended",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:23",
+     "laodonghetongfa:24",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E36",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "bank_flow"
+   ],
+   "hit_materials": [],
+   "gold_articles": [
+    "laodonghetongfa:87"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:87"
+   ],
+   "cited": 8,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "shebaofa:58",
+     "shebaofa:63",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E37",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "bank_flow",
+    "termination_notice"
+   ],
+   "hit_materials": [
+    "bank_flow",
+    "termination_notice"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:82",
+    "laodonghetongfa:87"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:82",
+    "laodonghetongfa:87"
+   ],
+   "cited": 13,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodongfa:50",
+     "laodonghetongfa:10",
+     "laodonghetongfa:14",
+     "laodonghetongfa:30",
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:50",
+     "laodonghetongfa:82",
+     "laodonghetongfa:87",
+     "sfjs2:6",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E38",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "attendance",
+    "bank_flow"
+   ],
+   "hit_materials": [
+    "attendance",
+    "bank_flow"
+   ],
+   "gold_articles": [
+    "laodongfa:44",
+    "laodonghetongfa:82"
+   ],
+   "hit_articles": [
+    "laodongfa:44",
+    "laodonghetongfa:82"
+   ],
+   "cited": 14,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodongfa:41",
+     "laodongfa:44",
+     "laodongfa:50",
+     "laodonghetongfa:10",
+     "laodonghetongfa:14",
+     "laodonghetongfa:30",
+     "laodonghetongfa:50",
+     "laodonghetongfa:82",
+     "sfjs2:6",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E39",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "badge"
+   ],
+   "hit_materials": [
+    "badge"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:87"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:87"
+   ],
+   "cited": 12,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-10-20",
+    "days": 350,
+    "articles": [
+     "laodonghetongfa:10",
+     "laodonghetongfa:14",
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:82",
+     "laodonghetongfa:87",
+     "sfjs2:6",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E40",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "company_registry"
+   ],
+   "hit_materials": [
+    "company_registry"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:50"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:50"
+   ],
+   "cited": 8,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "not_recommended",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodongfa:50",
+     "laodonghetongfa:30",
+     "laodonghetongfa:50",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E41",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "termination_notice"
+   ],
+   "hit_materials": [
+    "termination_notice"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:87"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:87"
+   ],
+   "cited": 6,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-10-05",
+    "days": 335,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E42",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "termination_notice"
+   ],
+   "hit_materials": [
+    "termination_notice"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:87"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:87"
+   ],
+   "cited": 6,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-01-20",
+    "days": 77,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E43",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "relation"
+   ],
+   "hit_materials": [
+    "relation"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:35",
+    "laodonghetongfa:50"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:35",
+    "laodonghetongfa:50"
+   ],
+   "cited": 9,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": null,
+    "days": null,
+    "articles": [
+     "laodongfa:50",
+     "laodonghetongfa:30",
+     "laodonghetongfa:35",
+     "laodonghetongfa:50",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E44",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [
+    "termination_notice"
+   ],
+   "hit_materials": [
+    "termination_notice"
+   ],
+   "gold_articles": [
+    "laodonghetongfa:87"
+   ],
+   "hit_articles": [
+    "laodonghetongfa:87"
+   ],
+   "cited": 8,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "recommend",
+    "scope": "pass",
+    "qual": "pass",
+    "deadline": "2027-11-03",
+    "days": 364,
+    "articles": [
+     "laodonghetongfa:46",
+     "laodonghetongfa:47",
+     "laodonghetongfa:87",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  },
+  {
+   "id": "E45",
+   "scope_ok": true,
+   "qual_ok": true,
+   "decision_ok": true,
+   "deadline_ok": true,
+   "venue_ok": true,
+   "gold_materials": [],
+   "hit_materials": [],
+   "gold_articles": [],
+   "hit_articles": [],
+   "cited": 8,
+   "invalid": 0,
+   "interception_ok": true,
+   "got": {
+    "decision": "cannot",
+    "scope": "pass",
+    "qual": "out_of_scope",
+    "deadline": "2027-09-15",
+    "days": 315,
+    "articles": [
+     "laodongfa:50",
+     "laodonghetongfa:30",
+     "laodonghetongfa:50",
+     "tiaojiezhongcai:2",
+     "tiaojiezhongcai:27",
+     "tiaojiezhongcai:47",
+     "tiaojiezhongcai:48",
+     "tiaojiezhongcai:6"
+    ]
+   }
+  }
+ ],
+ "problems": []
+}

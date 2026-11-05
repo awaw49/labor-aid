@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# macOS
+.DS_Store
+
+# 运行时配置：用户在「设置」页粘贴的 API key 会写入这个文件，不入库
+data/settings.json
+
+# 本地语音模型权重（faster-whisper-small，手动下载，约 500MB）
+models/
+
+# manual 模式的会话残留（req/resp 由演示过程产生，不入库）
+data/manual_llm/*
+!data/manual_llm/.gitkeep

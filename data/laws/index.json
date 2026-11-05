@@ -1,0 +1,74 @@
+[
+ {
+  "id": "laodongfa",
+  "title": "中华人民共和国劳动法",
+  "count": 107,
+  "effective": "2018-12-29"
+ },
+ {
+  "id": "laodonghetongfa",
+  "title": "中华人民共和国劳动合同法",
+  "count": 98,
+  "effective": "2013-07-01"
+ },
+ {
+  "id": "tiaojiezhongcai",
+  "title": "中华人民共和国劳动争议调解仲裁法",
+  "count": 54,
+  "effective": "2008-05-01"
+ },
+ {
+  "id": "shebaofa",
+  "title": "中华人民共和国社会保险法",
+  "count": 98,
+  "effective": "2018-12-29"
+ },
+ {
+  "id": "jiuye",
+  "title": "中华人民共和国就业促进法",
+  "count": 69,
+  "effective": "2015-04-24"
+ },
+ {
+  "id": "nianxiujia",
+  "title": "职工带薪年休假条例",
+  "count": 10,
+  "effective": "2008-01-01"
+ },
+ {
+  "id": "jiancha",
+  "title": "劳动保障监察条例",
+  "count": 36,
+  "effective": "2004-12-01"
+ },
+ {
+  "id": "shishitiaoli",
+  "title": "中华人民共和国劳动合同法实施条例",
+  "count": 38,
+  "effective": "2008-09-18"
+ },
+ {
+  "id": "sfjs1",
+  "title": "最高人民法院关于审理劳动争议案件适用法律问题的解释（一）",
+  "count": 54,
+  "effective": "2021-01-01"
+ },
+ {
+  "id": "sfjs2",
+  "title": "最高人民法院关于审理劳动争议案件适用法律问题的解释（二）",
+  "count": 21,
+  "effective": "2025-09-01"
+ },
+ {
+  "id": "nmgxz",
+  "title": "保障农民工工资支付条例",
+  "count": 64,
+  "effective": "2020-05-01"
+ },
+ {
+  "id": "gongshang",
+  "title": "工伤保险条例",
+  "count": 67,
+  "effective": "2011-01-01"
+ }
+]

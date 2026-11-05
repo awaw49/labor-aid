@@ -1,0 +1,54 @@
+import json
+import os
+import sys
+from datetime import date
+
+import pytest
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+
+from app import session as store  # noqa: E402
+
+CITY = json.load(open(os.path.join(ROOT, "data", "city", "hangzhou.json"), encoding="utf-8"))
+TODAY = date(2026, 11, 4)
+
+
+def needs(scope=None, retired="no", intern="no", legality="uncertain",
+          resign="not_applicable", legality_reason="", resign_reason=""):
+    return {
+        "scope_issues": [{"key": k, "evidence": ""} for k in (scope or [])],
+        "subject_flags": {
+            "retired_or_reemployment": {"value": retired, "evidence": ""},
+            "student_intern": {"value": intern, "evidence": ""},
+        },
+        "termination": {"legality": legality, "legality_reason": legality_reason,
+                        "resign_ground": resign, "resign_ground_reason": resign_reason},
+    }
+
+
+@pytest.fixture
+def city():
+    return CITY
+
+
+@pytest.fixture
+def today():
+    return TODAY
+
+
+@pytest.fixture
+def needs_factory():
+    return needs
+
+
+def make_session(slots, materials=None, suspect=None, story=None):
+    s = store.create()
+    for k, v in slots.items():
+        src = "image_confirmed" if k in (suspect or {}) else "oral"
+        s.set_slot(k, v, src, True)
+    for m in materials or []:
+        s.add_material(m)
+    if story:
+        s.story = list(story)
+    return s
