@@ -1,5 +1,6 @@
 """语音转写：faster-whisper 本地模型；音频只写临时文件，转写完立即删除。"""
 from __future__ import annotations
+
 import os
 import subprocess
 import tempfile
@@ -39,6 +40,7 @@ def _decode_to_16k_mono(src: str, dst: str) -> None:
 
 def _wav_to_float32(path: str):
     import wave
+
     import numpy as np
     with wave.open(path, "rb") as w:
         frames = w.readframes(w.getnframes())

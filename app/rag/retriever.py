@@ -1,5 +1,6 @@
 """法条与类案的混合检索：条号精确匹配 + BM25（中文字符二元组）。"""
 from __future__ import annotations
+
 import json
 import math
 import os

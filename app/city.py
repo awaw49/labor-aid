@@ -5,6 +5,7 @@ resolve() 负责把会话里已确认的 employer_city 接到对应口径上：
 - 未确认 / 未覆盖城市 → 杭州口径仅作展示兜底，闸门（gates.py）会明确提示覆盖范围并指路，不冒用金额。
 """
 from __future__ import annotations
+
 import json
 import os
 

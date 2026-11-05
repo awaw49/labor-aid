@@ -5,6 +5,7 @@ mode = "manual"：会话内人工应答——把完整请求写到 data/manual_l
 等外部（演示时由人在会话里）写回 resp_*.txt，用于无 API 时检验语义理解效果。
 """
 from __future__ import annotations
+
 import base64
 import json
 import re
@@ -74,7 +75,7 @@ def _manual_exchange(messages: list[dict], *, model: str, max_tokens: int, json_
 
 def chat(messages: list[dict], *, model: str | None = None, max_tokens: int = 1600,
          temperature: float | None = None, json_mode: bool = False,
-         _retried_empty: bool = False) -> str:
+         retried_empty: bool = False) -> str:
     cfg = settings_store.load()
     use_model = model or cfg["text_model"]
     if cfg.get("mode") == "manual":
@@ -88,7 +89,11 @@ def chat(messages: list[dict], *, model: str | None = None, max_tokens: int = 16
     }
     if json_mode:
         body["response_format"] = {"type": "json_object"}
-    url = cfg["base_url"].rstrip("/") + "/chat/completions"
+    base_url = (cfg.get("base_url") or "").strip()
+    if not base_url:
+        raise LLMError("尚未配置模型服务地址：请在页面右上角「设置」里填写 base_url"
+                       "（OpenAI 兼容的 /v1 地址），或改用 mode=manual 演示。")
+    url = base_url.rstrip("/") + "/chat/completions"
     r = None
     last = None
     for attempt in range(4):

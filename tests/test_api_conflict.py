@@ -2,7 +2,6 @@
 
 LLM 在这里被替换成固定返回（只替换外部模型，不替换被测逻辑）。
 """
-import pytest
 from fastapi.testclient import TestClient
 
 from app import extract as extract_mod

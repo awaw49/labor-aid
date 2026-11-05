@@ -3,6 +3,7 @@
 依据：《劳动争议调解仲裁法》第二十七条；例外见该条第四款。
 """
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Any
@@ -41,7 +42,6 @@ def compute_deadline(slots: dict, today: date | None = None) -> DeadlineResult:
     last_claim_date 五个字段。"""
     today = today or date.today()
     end = _d(slots.get("end_date"))
-    start = _d(slots.get("start_date"))
     still = slots.get("still_employed") == "yes"
     types = set(slots.get("dispute_types") or [])
     basis = ["tiaojiezhongcai:27"]

@@ -4,10 +4,11 @@
 判定结果以固定枚举 + 原话证据返回，供闸门 / 金额内核做可审计的计算。
 """
 from __future__ import annotations
+
 import hashlib
 import json
 
-from .llm import chat_json, LLMError
+from .llm import chat_json
 
 SCOPE_KEYS = ["social_insurance_backpay", "housing_fund", "work_injury_recognization",
               "personnel_dispute", "criminal", "supervision_only"]

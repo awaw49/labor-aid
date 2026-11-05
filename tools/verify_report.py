@@ -7,8 +7,8 @@
 依赖: 服务在 http://127.0.0.1:8787 运行（manual 模式需 LLM 应答方在线）。
 """
 from __future__ import annotations
+
 import json
-import re
 import sys
 import urllib.request
 from datetime import date, timedelta

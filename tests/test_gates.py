@@ -1,14 +1,15 @@
 from datetime import date
 
 from app.kernel.gates import map_categories, run_gates, scope_issues_from_needs
-from tests.conftest import make_session, needs
+from tests.conftest import needs
 
 CITY = None
 T = date(2026, 11, 4)
 
 
 def city():
-    import json, os
+    import json
+    import os
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return json.load(open(os.path.join(root, "data", "city", "hangzhou.json"), encoding="utf-8"))
 

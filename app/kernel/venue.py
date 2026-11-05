@@ -1,5 +1,6 @@
 """立案路径：城市参数 → 仲裁 / 诉讼 / 撤销 / 监察 / 法律援助，全部可点。"""
 from __future__ import annotations
+
 import urllib.parse
 
 
@@ -8,7 +9,6 @@ def _map_url(q: str) -> str:
 
 
 def build_venue(city: dict, slots: dict, deadline: dict) -> list[dict]:
-    p = city["params"]
     blocks: list[dict] = []
 
     for a in city["arbitration"]:
@@ -50,7 +50,9 @@ def build_venue(city: dict, slots: dict, deadline: dict) -> list[dict]:
         "stage": "起诉（不服裁决，仲裁之后）",
         "name": c["name"],
         "where": "微信小程序「人民法院在线服务」",
-        "note": (c.get("how") or "") + " " + c["note"] + ("；你的案件时效剩余 %s 天，裁决后再起算 15 日起诉期。" % days if days is not None else ""),
+        "note": (c.get("how") or "") + " " + c["note"] + (
+            f"；你的案件时效剩余 {days} 天，裁决后再起算 15 日起诉期。" if days is not None else ""
+        ),
         "actions": court_acts,
     })
 

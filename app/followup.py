@@ -6,10 +6,11 @@
 3. 槽位集合与选项仍由确定性层供给，保证答案可进内核计算；LLM 不可用时退回模板单问。
 """
 from __future__ import annotations
+
 import json
 import os
 
-from .llm import chat_json, LLMError
+from .llm import LLMError, chat_json
 
 SLOTS_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "slots.json")
 SLOTS = json.load(open(SLOTS_PATH, encoding="utf-8"))

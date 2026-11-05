@@ -4,6 +4,7 @@
 这类语义判断由 app/needs.py（LLM）给出枚举，本模块只消费枚举，不做关键词猜测。
 """
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import date
 
@@ -94,7 +95,6 @@ def calc_all(slots: dict, city: dict, today: date | None = None,
     avg = float(slots.get("avg_wage") or 0)
     types = set(slots.get("dispute_types") or [])
     by = slots.get("termination_by")
-    reason = (slots.get("termination_reason") or "").strip()
     termination = termination or {}
 
     if not avg:

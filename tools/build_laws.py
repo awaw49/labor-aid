@@ -1,5 +1,8 @@
 # 将 flk 官方 docx 解析为"条"级结构化法条库
-import json, re, os
+import json
+import os
+import re
+
 from docx import Document
 
 CN = '零一二三四五六七八九十百'

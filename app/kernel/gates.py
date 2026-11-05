@@ -4,11 +4,12 @@
 本模块只负责把枚举结果接到法条路由与时效计算上，保证判定可回溯、可单测。
 """
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import date
 
-from .deadline import compute_deadline
 from .. import city as city_store
+from .deadline import compute_deadline
 
 # 《劳动争议调解仲裁法》第二条六类受案范围
 ARTICLE_2_CATEGORIES = [

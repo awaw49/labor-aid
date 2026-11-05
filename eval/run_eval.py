@@ -5,6 +5,7 @@
   .venv/bin/python eval/run_eval.py --verbose  # 打印每条不一致项
 """
 from __future__ import annotations
+
 import argparse
 import json
 import os
@@ -14,8 +15,8 @@ from datetime import date
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-from app import session as store                      # noqa: E402
-from app.report import build_report                   # noqa: E402
+from app import session as store  # noqa: E402
+from app.report import build_report  # noqa: E402
 
 CASES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cases.jsonl")
 TODAY = date(2026, 11, 4)

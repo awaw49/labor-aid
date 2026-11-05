@@ -1,5 +1,6 @@
 """运行时可配置的模型 API 设置（存 data/settings.json，网页里可改）。"""
 from __future__ import annotations
+
 import json
 import os
 import threading
@@ -7,8 +8,18 @@ import threading
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PATH = os.path.join(ROOT, "data", "settings.json")
 
+# 可选：支持仓库根目录的 .env（复制 .env.example 即可），没装 python-dotenv 也能跑
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - 未安装可选依赖时走这里
+    load_dotenv = None
+if load_dotenv is not None:
+    load_dotenv(os.path.join(ROOT, ".env"))
+
 DEFAULTS = {
-    "base_url": "https://jpn.cdn.moxuna.com/v1",
+    # 默认留空：不预设任何第三方中转地址，避免把个人使用的中转站当成项目默认值。
+    # 首次启动请在页面右上角「设置」里填写你自己的 OpenAI 兼容地址（形如 https://host/v1）。
+    "base_url": "",
     # 密钥不进代码：优先读环境变量 LABOR_AID_API_KEY，或在网页「设置」里粘贴
     # （粘贴后存 data/settings.json，该文件已列入 .gitignore，不入库）
     "api_key": "",

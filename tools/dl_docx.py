@@ -1,4 +1,9 @@
-import json, re, subprocess, sys, os, time, urllib.parse
+import json
+import os
+import subprocess
+import time
+import urllib.parse
+
 meta = json.load(open('data/raw/flk_meta.json', encoding='utf-8'))
 os.makedirs('data/raw/docx', exist_ok=True)
 for k, v in meta.items():

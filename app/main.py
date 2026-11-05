@@ -1,5 +1,6 @@
 """劳动仲裁初步咨询助手 · API。"""
 from __future__ import annotations
+
 import base64
 import json
 import os
@@ -8,20 +9,21 @@ import time
 from datetime import date
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import asr, city as city_store, config, extract, followup, report, session as store
+from . import __version__, asr, config, extract, followup, report
+from . import city as city_store
+from . import session as store
 from . import settings as settings_store
 from .llm import LLMError, chat_json, probe
-from .rag.retriever import LawCorpus, CaseCorpus
+from .rag.retriever import CaseCorpus, LawCorpus
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC = os.path.join(ROOT, "static")
 DATA = config.DATA_DIR
 
-app = FastAPI(title="劳动仲裁初步咨询助手", version="3.0")
+app = FastAPI(title="劳动仲裁初步咨询助手", version=__version__)
 
 DOC_NAMES = {"termination_notice": "解除劳动合同通知书", "contract": "劳动合同/录用通知",
              "payslip": "工资条", "bank_flow": "银行流水", "chat": "聊天记录截图",
@@ -312,7 +314,6 @@ def answer(sid: str, body: AnswerIn):
     if not s:
         raise HTTPException(404, "session not found")
     slot, value = body.slot, body.value
-    meta = followup.BY_ID.get(slot, {})
 
     if value == "__skip__":
         s.skipped.add(slot)

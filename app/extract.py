@@ -4,12 +4,13 @@
 模型不可用就把错误如实报给用户，绝不退回写死的词表。
 """
 from __future__ import annotations
+
 import json
 import re
 
 from . import ocr
 from . import settings as settings_store
-from .llm import chat_json, chat_image, LLMError
+from .llm import LLMError, chat_image, chat_json
 
 SLOT_IDS = ["employer_name", "employer_city", "start_date", "end_date", "termination_by",
             "termination_reason", "contract_state", "avg_wage", "dispute_types",
@@ -154,6 +155,7 @@ meta.signal 识别来访者这句话的"谈话信号"（不是案情事实）：
 def extract_from_text(text: str, known: dict, missing: list[dict] | None = None) -> dict:
     known_brief = {k: v.get("value") for k, v in known.items() if v.get("confirmed")}
     from datetime import date
+
     from .followup import FOLLOWUP_RULES
     today = date.today().isoformat()
     messages = [

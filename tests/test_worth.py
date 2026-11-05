@@ -3,7 +3,7 @@ from datetime import date
 from app.kernel.calc import calc_all
 from app.kernel.evidence import score_evidence
 from app.kernel.gates import run_gates
-from app.kernel.worth import compute_worth, WEIGHTS
+from app.kernel.worth import WEIGHTS, compute_worth
 
 T = date(2026, 11, 4)
 CITY = {"params": {"avg_wage_monthly": 8537, "min_wage_monthly": 2660,
@@ -25,7 +25,8 @@ def build(slots, materials, needs=None):
 
 
 def CITY_FULL():
-    import json, os
+    import json
+    import os
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return json.load(open(os.path.join(root, "data", "city", "hangzhou.json"), encoding="utf-8"))
 

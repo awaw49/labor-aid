@@ -1,5 +1,6 @@
 """值得性六维加权：规则实现，输出可解释分项与三选一结论。"""
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 
 WEIGHTS = {
@@ -161,7 +162,6 @@ def compute_worth(slots: dict, gates, evidence, calc, city: dict,
 
 def _build_reasons(dims, slots, gates, evidence, amount, alt, termination: dict,
                    city: dict, threshold: int) -> list[dict]:
-    d = {x.key: x for x in dims}
     types = set(slots.get("dispute_types") or [])
     reasons = []
     term = termination or {}

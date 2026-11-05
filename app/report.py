@@ -1,20 +1,19 @@
 """报告组装：严格四块（结论卡 / 材料清单 / 立案路径 / 法条与类案）+ 免责声明。"""
 from __future__ import annotations
-import json
+
 import os
 from datetime import date
 
+from . import city as city_store
+from . import needs as needs_engine
 from .kernel.calc import calc_all
 from .kernel.evidence import score_evidence
 from .kernel.gates import run_gates
 from .kernel.materials import build_materials
 from .kernel.venue import build_venue
 from .kernel.worth import compute_worth
-from . import needs as needs_engine
-from .rag.retriever import LawCorpus, CaseCorpus
 from .rag.relevant import relevant_articles
-
-from . import city as city_store
+from .rag.retriever import CaseCorpus, LawCorpus
 
 DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 LAWS = LawCorpus()

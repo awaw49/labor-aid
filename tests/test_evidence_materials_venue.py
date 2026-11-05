@@ -45,7 +45,7 @@ def test_materials_added_per_dispute_type():
 
 
 def test_materials_no_duplicates():
-    items = build_materials({"termination", "unpaid_wage", "termination"})
+    items = build_materials({"termination", "unpaid_wage"})
     keys = [m["key"] for m in items]
     assert len(keys) == len(set(keys))
 
@@ -57,7 +57,8 @@ def test_materials_mark_uploaded():
 
 
 def test_venue_has_arbitration_court_and_aid():
-    import json, os
+    import json
+    import os
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     city = json.load(open(os.path.join(root, "data", "city", "hangzhou.json"), encoding="utf-8"))
     blocks = build_venue(city, {}, {"days_left": 100})
@@ -66,7 +67,8 @@ def test_venue_has_arbitration_court_and_aid():
 
 
 def test_venue_actions_are_clickable():
-    import json, os
+    import json
+    import os
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     city = json.load(open(os.path.join(root, "data", "city", "hangzhou.json"), encoding="utf-8"))
     blocks = build_venue(city, {}, {"days_left": None})
@@ -77,7 +79,8 @@ def test_venue_actions_are_clickable():
 
 
 def test_venue_city_caliber_included():
-    import json, os
+    import json
+    import os
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     city = json.load(open(os.path.join(root, "data", "city", "hangzhou.json"), encoding="utf-8"))
     blocks = build_venue(city, {}, {"days_left": 10})

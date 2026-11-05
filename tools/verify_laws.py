@@ -3,7 +3,11 @@
 用法: python tools/verify_laws.py 源页.html law_id [law_id ...]
 源页抓取自 gov.cn 系转载/最高法公报；比对时归一空白与全半角标点，只暴露真差异。
 """
-import re, html, json, sys, os
+import html
+import json
+import os
+import re
+import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PUNCT = str.maketrans({"（": "(", "）": ")", "：": ":", "；": ";", "，": ",", "。": ".", "、": ",",

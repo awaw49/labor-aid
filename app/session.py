@@ -1,5 +1,6 @@
 """会话状态：只在内存；图片与音频处理完即丢弃，不落盘、不进 RAG。"""
 from __future__ import annotations
+
 import time
 import uuid
 from dataclasses import dataclass, field

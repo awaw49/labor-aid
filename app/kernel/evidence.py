@@ -1,5 +1,6 @@
 """证据强度打分：材料类型 × 是否书证 × 是否原件 × 争议类型的关键证据。纯规则。"""
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 
 # 材料类型 → (显示名, 分值说明)

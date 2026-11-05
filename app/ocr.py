@@ -1,5 +1,6 @@
 """本机 OCR（macOS Vision 框架，离线、不联网、不落盘）。当配置的模型不支持图片时作为兜底。"""
 from __future__ import annotations
+
 import json
 import os
 import subprocess
