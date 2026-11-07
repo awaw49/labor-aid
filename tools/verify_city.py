@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """五城口径文件一致性自检：schema 完整、一裁终局线=最低工资×12、上限=3×社平、来源字段齐。"""
-import json, sys
+import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent

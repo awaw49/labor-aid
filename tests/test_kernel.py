@@ -10,12 +10,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pytest
 
+from app import city as city_store
+from app import session as store
+from app.extract import norm_date, norm_money
 from app.kernel.calc import calc_all, service_years, severance_base
 from app.kernel.deadline import compute_deadline
 from app.kernel.gates import run_gates
-from app.extract import norm_date, norm_money
-from app import city as city_store
-from app import session as store
 
 HZ = city_store._load("杭州市")
 TODAY = date(2026, 11, 6)
@@ -240,7 +240,6 @@ def test_deadline_exception_monthly_note():
     assert any("按月" in e for e in dl.exceptions) or dl.exceptions == []
 
 def test_session_ttl_eviction():
-    import time as _t
     sid = store.create().id
     store.SESSIONS[sid].created -= 25 * 3600
     store._evict_expired(max_age_s=24 * 3600)

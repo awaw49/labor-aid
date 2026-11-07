@@ -4,13 +4,13 @@ from __future__ import annotations
 import base64
 import json
 import os
-from random import randint
 import re
+import secrets as _secrets
 import time
 from datetime import date
+from random import randint
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-import secrets as _secrets
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -111,6 +111,7 @@ def _cleanup_bridge_on_exit():
 def _cleanup_bridge():
     """清掉上次运行遗留的桥路文件（请求方已不在，留着只会误导）。"""
     import glob
+
     from . import config
     for f in glob.glob(os.path.join(config.DATA_DIR, "manual_llm", "req_*.json")) + \
              glob.glob(os.path.join(config.DATA_DIR, "manual_llm", "resp_*.txt")) + \
@@ -633,7 +634,7 @@ def confirm_all(sid: str):
     if not s.suspect:
         raise HTTPException(409, {"message": "没有待确认的读数"})
     confirmed = []
-    for slot, item in list(s.suspect.items()):
+    for slot in list(s.suspect):
         v = s.confirm(slot)
         confirmed.append(f"{followup.BY_ID.get(slot, {}).get('label', slot)} {v}")
     s.messages.append({"role": "assistant", "kind": "ack",

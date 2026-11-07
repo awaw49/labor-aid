@@ -240,7 +240,6 @@ def test_intro_variants():
     assert len(texts) >= 2          # 开场白有轮换
 
 def test_city_ack_guidance_for_uncovered():
-    from app.main import _ack
     import app.main as m
     # 直接断言 _pretty + ack 组合对非覆盖城市有引导话术：走 answer 流太重，这里查映射
     assert "杭州市" in m.ENUM_LABELS.get("employer_city", {}) or True
@@ -346,8 +345,8 @@ def test_still_employed_chip_clears_end_date(sid):
     assert "end_date" not in s.slots
 
 def test_bundle_flag_on_pair_round(sid):
-    from app.main import _turn
     from app import followup
+    from app.main import _turn
     s = store.get(sid)
     s.set_slot("dispute_types", ["termination"], "oral", True)
     for k, v in (("employer_city", "杭州市"), ("avg_wage", 9000),
