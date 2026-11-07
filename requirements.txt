@@ -1,7 +1,7 @@
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.16.0
-av==19.0.2
+av>=11,<20  # 19.x 需 Python>=3.12；3.11 由 pip 解析到 18.x（faster-whisper 音频解码）
 certifi==2026.10.23
 click==8.5.0
 coverage==7.17.2
