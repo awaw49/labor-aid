@@ -1,6 +1,7 @@
 """会话状态：只在内存；图片与音频处理完即丢弃，不落盘、不进 RAG。"""
 from __future__ import annotations
 
+import secrets
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -46,7 +47,14 @@ class Session:
         return {k: v["value"] for k, v in self.slots.items()}
 
     def text(self) -> str:
-        return "\n".join(self.story)
+        # 语义层只看最近 40 条口述，防超长会话把 prompt 撑爆
+        return "\n".join(self.story[-40:])
+
+    def say(self, kind: str, text: str, **extra) -> dict:
+        """带时间戳的消息（前端 title 悬停可见）。"""
+        m = {"role": "assistant", "kind": kind, "text": text, "at": time.strftime("%H:%M:%S"), **extra}
+        self.messages.append(m)
+        return m
 
     def add_material(self, material_type: str, meta: dict | None = None):
         for m in self.materials:
@@ -59,10 +67,21 @@ class Session:
 
 
 SESSIONS: dict[str, Session] = {}
+MAX_SESSIONS = 200          # 内存保护：超出后按最早创建时间淘汰
+
+
+def _evict_expired(max_age_s: int = 24 * 3600):
+    now = time.time()
+    for sid in [sid for sid, s in SESSIONS.items() if now - s.created > max_age_s]:
+        SESSIONS.pop(sid, None)
 
 
 def create() -> Session:
-    s = Session(id=uuid.uuid4().hex[:12])
+    _evict_expired()
+    while len(SESSIONS) >= MAX_SESSIONS:
+        oldest = min(SESSIONS.values(), key=lambda s: s.created)
+        SESSIONS.pop(oldest.id, None)
+    s = Session(id=secrets.token_hex(6))
     SESSIONS[s.id] = s
     return s
 

@@ -1,9 +1,39 @@
 {
-  "name": "劳动仲裁初步咨询",
-  "short_name": "仲裁咨询",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#f7f6f1",
-  "theme_color": "#0f5c4a",
-  "icons": [{"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}]
+ "name": "劳动仲裁初步咨询",
+ "short_name": "仲裁咨询",
+ "start_url": "/",
+ "display": "standalone",
+ "background_color": "#f7f6f1",
+ "theme_color": "#0f5c4a",
+ "icons": [
+  {
+   "src": "/icon.svg",
+   "sizes": "any",
+   "type": "image/svg+xml",
+   "purpose": "any"
+  }
+ ],
+ "shortcuts": [
+  {
+   "name": "开始咨询",
+   "url": "/?view=chat",
+   "icons": [
+    {
+     "src": "/icon.svg",
+     "sizes": "any"
+    }
+   ]
+  },
+  {
+   "name": "法条库",
+   "url": "/?view=laws",
+   "icons": [
+    {
+     "src": "/icon.svg",
+     "sizes": "any"
+    }
+   ]
+  }
+ ],
+ "description": "劳动仲裁初步咨询演示：五城口径，法条来自官方法规库，会话仅在内存中。"
 }

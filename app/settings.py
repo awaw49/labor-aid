@@ -30,7 +30,7 @@ DEFAULTS = {
     "timeout": 120,
     "temperature": 0.1,
     "mode": "api",           # api = 调远端模型；manual = 会话内人工应答（演示用）
-    "manual_timeout": 600,
+    "manual_timeout": 180,
 }
 
 _lock = threading.Lock()

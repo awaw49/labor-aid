@@ -32,11 +32,18 @@ const el = (tag, cls, html) => { const n = document.createElement(tag); if (cls)
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const money = (n) => '¥' + Number(n || 0).toLocaleString('zh-CN', { maximumFractionDigits: 0 });
 
+function sessionGone(e) { return !!(e && e.sessionGone); }
+
 async function api(path, body, method = 'POST') {
   const opt = { method, headers: {} };
   if (body instanceof FormData) opt.body = body;
   else if (body !== undefined) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
-  const res = await fetch(path, opt);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 200000);   // 桥路上限 180s + 余量
+  let res;
+  try { res = await fetch(path, { ...opt, signal: ctrl.signal }); }
+  catch (e) { if (e.name === 'AbortError') throw Object.assign(new Error('等太久没有回应——服务可能没起来'), { payload: { message: '等太久没有回应——服务可能没起来', retryable: true } }); throw e; }
+  finally { clearTimeout(timer); }
   const ct = res.headers.get('content-type') || '';
   const data = ct.includes('json') ? await res.json() : await res.text();
   if (!res.ok) {
@@ -45,9 +52,23 @@ async function api(path, body, method = 'POST') {
     const err = new Error(msg);
     err.payload = detail;
     err.retryable = res.status >= 500 || res.status === 429;
+    // 服务端内存会话被清（重启/过期）：标记后由调用方自愈开新会话
+    if (res.status === 404 && /session not found/.test(msg) && state.sid) {
+      err.sessionGone = true;
+      state.sid = null;
+      try { sessionStorage.removeItem('sid'); } catch (_) {}
+    }
     throw err;
   }
   return data;
+}
+
+window.addEventListener('error', (e) => { try { toast('页面出了点小状况：' + (e.message || '').slice(0, 60)); } catch (_) {} });
+window.addEventListener('unhandledrejection', () => { /* 网络类 rejection 已在各调用点 toast，这里兜底防白屏 */ });
+
+function applyTheme() {
+  const t = localStorage.getItem('theme') || 'auto';
+  document.documentElement.dataset.theme = t === 'auto' ? '' : t;
 }
 
 function toast(msg, ms = 2400) {
@@ -64,6 +85,7 @@ const TITLES = { home: '劳动仲裁初步咨询', chat: '咨询', report: '律�
 const historyStack = [];
 
 function go(view, push = true) {
+  try { if (push) location.hash = '#/' + view; } catch (_) {}
   if (push && state.view !== view) historyStack.push(state.view);
   state.view = view;
   $$('.view').forEach(v => v.classList.toggle('active', v.id === VIEWS[view]));
@@ -83,8 +105,22 @@ window.addEventListener('scroll', () => {
 /* ---------------- 会话 ---------------- */
 async function ensureSession() {
   if (state.sid) return;
+  let prev = null;
+  try { prev = sessionStorage.getItem('sid'); } catch (_) {}
+  if (prev) {
+    // 刷新后先续旧会话：对话还在，用户不丢上下文；服务端已清就照常新建
+    try {
+      const data = await api(`/api/session/${prev}`, undefined, 'GET');
+      state.sid = data.session_id;
+      state.data = data;
+      renderMessages(data.messages || []);
+      updateChrome();
+      return;
+    } catch (_) {}
+  }
   const data = await api('/api/session', {});
   state.sid = data.session_id;
+  try { sessionStorage.setItem('sid', state.sid); } catch (_) {}
   state.data = data;
   renderMessages(data.messages || []);
   updateChrome();
@@ -98,6 +134,8 @@ async function startChat() {
 function updateChrome() {
   const c = state.data?.completeness;
   if (!c) return;
+  const remain = Math.max(0, c.total - c.done);
+  document.title = remain > 0 ? `咨询 · 还差 ${remain} 项 — 劳动仲裁初步咨询` : '劳动仲裁初步咨询';
 
 }
 
@@ -110,9 +148,12 @@ function renderMessages(msgs) {
 function appendMessage(m) {
   const list = $('#chatList');
   if (m.kind === 'questions') {
+    const qs = (m.questions || []).filter(q => (q.text || '').trim());
+    if (!qs.length) return;                       // 空 questions 消息一律不渲染
     const wrap = el('div', 'msg');
     wrap.dataset.kind = 'questions';
-    (m.questions || []).forEach(q => wrap.appendChild(questionCard(q)));
+    if (m.bundle && qs.length > 1) wrap.appendChild(bundleCard(qs));
+    else qs.forEach(q => wrap.appendChild(questionCard(q)));
     list.appendChild(wrap);
     return;
   }
@@ -130,13 +171,22 @@ function appendMessage(m) {
     return;
   }
   const node = el('div', 'msg ' + (m.role === 'user' ? 'user' : 'assistant'));
-  const bubble = el('div', 'bubble');
+  const bubble = el('div', 'bubble' + (m.kind === 'image_read' ? ' quote-bubble' : ''));
   bubble.textContent = m.text || '';
+  if (m.thumb) {
+    const img = el('img', 'thumb');
+    img.src = m.thumb; img.alt = '刚发送的材料';
+    bubble.appendChild(img);
+  }
   node.appendChild(bubble);
+  const list0 = $('#chatList');
+  if (list0 && list0.children.length > 80) list0.removeChild(list0.firstElementChild);   // 超长对话 DOM 修剪
   list.appendChild(node);
 }
 
 function questionCard(q) {
+  const comp = state.data?.completeness;
+  const remain = comp ? Math.max(0, comp.total - comp.done) : null;
   const card = el('div', 'qcard');
   card.dataset.slot = q.slot;
   const isMulti = !!q.multi || q.type === 'multi';
@@ -149,12 +199,33 @@ function questionCard(q) {
   options.forEach(o => {
     const b = el('button', 'chip' + (o.value.startsWith('__') ? ' subtle' : ''), esc(o.label));
     b.dataset.value = o.value;
+    b.setAttribute('aria-label', o.label);
     chips.appendChild(b);
   });
   if (q.kind === 'confirm') {
     const manual = el('button', 'chip subtle', '不对，我来改');
     manual.dataset.value = '__manual__';
     chips.appendChild(manual);
+    const pending = Object.keys(state.data?.suspect || {}).length;
+    if (pending > 1) {
+      const all = el('button', 'chip', '都对，就这些');
+      all.dataset.value = '__confirm_all__';
+      all.addEventListener('click', async () => {
+        card.remove();
+        try {
+          const r = await api(`/api/session/${state.sid}/confirm_all`, {});
+          mergeState(r);
+          renderMessages(r.messages || []);
+        } catch (e) { if (sessionGone(e)) { await ensureSession(); } toast(e.message); }
+      });
+      chips.appendChild(all);
+    }
+  }
+  if (remain !== null && q.kind === 'ask') {
+    const prog = el('div', 'q-help');
+    prog.style.cssText = 'border:0;padding:0 0 6px;color:var(--ink-3,#8A968F);font-size:.78rem';
+    prog.textContent = `还差 ${remain} 项关键信息就能出完整意见`;
+    card.appendChild(prog);
   }
   card.appendChild(chips);
 
@@ -163,21 +234,42 @@ function questionCard(q) {
     const row = el('div', 'q-input');
     const input = el('input');
     input.placeholder = q.placeholder || '直接输入';
-    if (q.type === 'date') input.inputMode = 'numeric';
+    if (q.type === 'date') { input.inputMode = 'numeric'; input.placeholder = (input.placeholder || '例：2026-03-15').replace(/20\d{2}/, String(new Date().getFullYear())); }
     if (q.type === 'money') input.inputMode = 'decimal';
     const btn = el('button', '', '提交');
+    btn.disabled = true;
+    setTimeout(() => input.focus(), 80);
+    if (q.type === 'money') input.addEventListener('input', () => {   // 金额只留数字与小数点
+      const cleanedParts = input.value.replace(/[^0-9.]/g, '').split('.');
+      const cleaned = cleanedParts.length > 1 ? cleanedParts[0] + '.' + cleanedParts.slice(1).join('') : cleanedParts[0] || '';
+      if (cleaned !== input.value) input.value = cleaned;
+      btn.disabled = !cleaned.trim();
+    });
+    input.addEventListener('input', () => { btn.disabled = !input.value.trim(); });
     row.append(input, btn);
     card.appendChild(row);
     const submit = () => {
       const v = input.value.trim();
-      if (!v) return;
+      if (!v || btn.disabled) return;
+      btn.disabled = true;                    // 提交中防重复
       if (q.kind === 'confirm') submitConfirm(q.slot, v); else submitAnswer(q.slot, v);
       card.remove();
     };
     btn.addEventListener('click', submit);
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+    input.addEventListener('keydown', e => {
+      if (e.isComposing || e.keyCode === 229) return;   // 输入法组词回车不提交
+      if (e.key === 'Enter') { e.preventDefault(); if (!btn.disabled) submit(); }
+    });
   }
 
+  chips.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
+    const btns = [...chips.querySelectorAll('button')];
+    const i = btns.indexOf(document.activeElement);
+    if (i < 0) return;
+    ev.preventDefault();
+    btns[(i + (ev.key === 'ArrowDown' ? 1 : btns.length - 1)) % btns.length].focus();
+  });
   chips.addEventListener('click', async (ev) => {
     const b = ev.target.closest('.chip');
     if (!b) return;
@@ -228,6 +320,102 @@ function showHelp(card, q) {
   card.appendChild(box);
 }
 
+/* ---------------- 打包卡：两件小事一张卡，一次提交 ---------------- */
+function bundleCard(qs) {
+  const card = el('div', 'qcard');
+  const parts = qs.map(q => ({ q, value: null }));
+
+  parts.forEach(p => {
+    const sec = el('div', 'b-sec');
+    sec.appendChild(el('div', 'q-title', esc(p.q.text)));
+    if (p.q.why) sec.appendChild(el('div', 'q-why', esc(p.q.why)));
+    const chips = el('div', 'q-chips');
+    const inputTypes = ['text', 'money', 'date', 'city'];
+    (p.q.options || []).forEach(o => {
+      const b = el('button', 'chip' + (o.value.startsWith('__') ? ' subtle' : ''), esc(o.label));
+      b.dataset.value = o.value;
+      b.addEventListener('click', () => {
+        if (o.value === '__unsure__') { showPartHelp(sec, p, refresh); return; }
+        p.value = o.value;
+        chips.querySelectorAll('.chip').forEach(x => x.classList.remove('selected'));
+        b.classList.add('selected');
+        refresh();
+      });
+      chips.appendChild(b);
+    });
+    sec.appendChild(chips);
+    if (p.q.kind === 'ask' && inputTypes.includes(p.q.type)) {
+      const row = el('div', 'q-input');
+      const input = el('input');
+      input.placeholder = p.q.placeholder || '直接输入';
+      if (p.q.type === 'date') { input.inputMode = 'numeric'; input.placeholder = (input.placeholder || '例：2026-03-15').replace(/20\d{2}/, String(new Date().getFullYear())); }
+      if (p.q.type === 'money') input.inputMode = 'decimal';
+      if (p.q.type === 'money') input.addEventListener('input', () => {   // 金额只留数字与小数点
+        const ps = input.value.replace(/[^0-9.]/g, '').split('.');
+        const cleaned = ps.length > 1 ? ps[0] + '.' + ps.slice(1).join('') : ps[0] || '';
+        if (cleaned !== input.value) input.value = cleaned;
+        p.value = cleaned.trim() || null; refresh();
+      });
+      else input.addEventListener('input', () => { p.value = input.value.trim() || null; refresh(); });
+      row.append(input);
+      sec.appendChild(row);
+    }
+    card.appendChild(sec);
+  });
+
+  const submit = el('button', 'btn btn-primary b-submit', '提交');
+  submit.disabled = true;
+  function refresh() {
+    submit.disabled = parts.some(p => !p.value);
+  }
+  submit.addEventListener('click', async () => {
+    if (submit.disabled || state.busy) return;
+    submit.disabled = true;
+    const answers = parts.map(p => ({ slot: p.q.slot, value: p.value }));
+    const ok = await submitBundle(answers, card);
+    if (!ok) submit.disabled = false;
+  });
+  card.appendChild(submit);
+  return card;
+}
+
+function showPartHelp(sec, p, refresh) {
+  const old = $('.q-help', sec);
+  if (old) return;
+  const box = el('div', 'q-help');
+  box.innerHTML = `<b>可以这样查：</b>${esc(p.q.help || '先空着也行，意见里我会写明这项没问到。')}`;
+  const skip = el('button', 'chip subtle', '先空着');
+  skip.style.marginTop = '8px';
+  skip.addEventListener('click', () => {
+    p.value = '__skip__';
+    box.remove();
+    refresh();
+  });
+  box.appendChild(skip);
+  sec.appendChild(box);
+}
+
+async function submitBundle(answers, card) {
+  if (state.busy) return false;
+  state.busy = true;
+  const thinking = waitBubble();
+  try {
+    const r = await api(`/api/session/${state.sid}/answer_batch`, { answers });
+    clearWait(thinking);
+    card && card.remove();
+    mergeState(r);
+    if (r.help) showHelpSheet(r.help);
+    renderMessages(r.messages || []);
+    if (state.report) { state.factsUpdated = true; toast('情况有更新——书面意见还是旧的，点「查看律师意见」重新出', 4200); }
+    return true;
+  } catch (e) {
+    clearWait(thinking);
+    if (sessionGone(e)) { await ensureSession(); state.busy = false; return submitBundle(answers, card); }
+    toast(e.message);
+    return false;
+  } finally { state.busy = false; }
+}
+
 function conflictCard(m, c) {
   const wrap = el('div', 'msg');
   const box = el('div', 'conflict');
@@ -249,22 +437,57 @@ function conflictCard(m, c) {
   return wrap;
 }
 
-function scrollBottom() {
+function scrollBottom(force = true) {
   const list = $('#chatList');
-  requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
-  if (list) list.scrollTop = list.scrollHeight;
+  const nearBottom = () => !list || (list.scrollHeight - list.scrollTop - list.clientHeight) < 240;
+  const wasNear = nearBottom();
+  requestAnimationFrame(() => {
+    if (!force && !wasNear) return;           // 用户正在上翻看历史，不硬拉
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    if (list) list.scrollTop = list.scrollHeight;
+  });
 }
 
 /* ---------------- 提交 ---------------- */
+function waitBubble(text) {
+  const t = el('div', 'msg assistant');
+  t.innerHTML = `<div class="bubble plain" style="color:var(--ink-3)">${esc(text || '律师在记录…')}</div>`;
+  $('#chatList').appendChild(t); scrollBottom(false);
+  t._hintTimer = setTimeout(async () => {          // 等太久时告诉用户卡在哪，不干瞪
+    try {
+      const st = await api('/api/bridge/status', undefined, 'GET');
+      if (st.mode === 'manual') {
+        const b = t.querySelector('.bubble');
+        if (b) b.textContent = (st.responder_online === false || st.pending > 0)
+          ? '还在等应答方写回复——演示桥路没接上时这里会一直等，设置里能看到桥路状态'
+          : '应答方在写回复，一般几秒内好';
+      }
+    } catch {}
+  }, 5000);
+  return t;
+}
+
+function clearWait(t) {
+  if (t && t._hintTimer) clearTimeout(t._hintTimer);
+  if (t) t.remove();
+}
+
 async function submitAnswer(slot, value) {
   if (state.busy) return;
   state.busy = true;
+  const thinking = waitBubble();
   try {
     const r = await api(`/api/session/${state.sid}/answer`, { slot, value });
+    clearWait(thinking);
     mergeState(r);
     if (r.help) showHelpSheet(r.help);
     renderMessages(r.messages || []);
-  } catch (e) { toast(e.message); }
+    if (state.report) { state.factsUpdated = true; toast('情况有更新——书面意见还是旧的，点「查看律师意见」重新出', 4200); }
+  } catch (e) {
+    clearWait(thinking);
+    if (sessionGone(e)) { await ensureSession(); state.busy = false; return submitAnswer(slot, value); }
+    toast(e.message);
+  }
   finally { state.busy = false; }
 }
 
@@ -276,20 +499,36 @@ async function submitConfirm(slot, value) {
     const r = await api(`/api/session/${state.sid}/confirm`, body);
     mergeState(r);
     renderMessages(r.messages || []);
-  } catch (e) { toast(e.message); }
+  } catch (e) {
+    if (sessionGone(e)) { await ensureSession(); state.busy = false; return submitConfirm(slot, value); }
+    toast(e.message); }
   finally { state.busy = false; }
 }
 
-async function sendText(text, source = 'text') {
-  if (!text.trim()) return;
+async function sendText(text, source = 'text', retried = false) {
+  if (!text.trim() || state.busy) return;
+  state.busy = true;
+  try { return await _sendTextInner(text, source, retried); }
+  finally { state.busy = false; }
+}
+
+async function _sendTextInner(text, source = 'text', retried = false) {
   await ensureSession();
-  appendMessage({ role: 'user', kind: 'text', text });
-  scrollBottom();
+  if (!retried) { appendMessage({ role: 'user', kind: 'text', text }); scrollBottom(); }
+  const thinking = waitBubble();
   try {
     const r = await apiWithRetry(`/api/session/${state.sid}/text`, { text, source });
+    clearWait(thinking);
     mergeState(r);
     renderMessages(r.messages || []);
-  } catch (e) { toast(e.message, 4200); }
+  } catch (e) {
+    clearWait(thinking);
+    if (sessionGone(e) && !retried) { toast('刚才服务重启了一下，接着说就行', 2600); return sendText(text, source, true); }
+    const sorry = el('div', 'msg assistant');
+    sorry.innerHTML = '<div class="bubble">这会儿网络不太稳，你刚才说的话我没能记下来——再发一次就好，内容不会丢。</div>';
+    $('#chatList').appendChild(sorry); scrollBottom(false);
+    toast(e.message, 4200);
+  }
 }
 
 function mergeState(r) {
@@ -325,6 +564,7 @@ function autoGrow() {
 }
 
 async function onSend() {
+  if (state.busy) return;                     // 应答中防连点：一条一条来
   const t = $('#textInput');
   const v = t.value.trim();
   if (!v) return;
@@ -335,7 +575,8 @@ async function onSend() {
 
 /* 图片 */
 async function compressImage(file, maxSide = 1600) {
-  const bmp = await createImageBitmap(file);
+  // createImageBitmap 按图片内嵌方向解码，避免 iPhone 照片横竖颠倒
+  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
   const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(bmp.width * scale);
@@ -348,27 +589,38 @@ async function compressImage(file, maxSide = 1600) {
 async function uploadImages(files) {
   if (!files.length) return;
   await ensureSession();
+  let picIdx = 0;
   for (const file of files) {
-    appendMessage({ role: 'user', kind: 'image', text: '已发送 1 张照片' });
-    const note = el('div', 'msg assistant');
-    note.innerHTML = '<div class="bubble plain" style="color:var(--ink-3)">正在看这张材料…</div>';
-    $('#chatList').appendChild(note); scrollBottom();
+    picIdx++;
+    if (files.length > 1) toast(`正在读第 ${picIdx}/${files.length} 张…`, 4000);
+    const shotUrl = state.lastShots?.[state.lastShots.length - 1];
+    appendMessage({ role: 'user', kind: 'image', text: '已发送 1 张照片', thumb: shotUrl });
+    if (!/^image\//.test(file.type || '')) { toast('这个不是图片——支持照片或截图（jpg/png 等）'); continue; }
+    const note = waitBubble('正在看这张材料…');
     try {
       const fd = new FormData();
-      fd.append('file', await compressImage(file));
+      const shot = await compressImage(file);
+      fd.append('file', shot);
+      state.lastShots = state.lastShots || [];
+      state.lastShots.push(URL.createObjectURL(shot));
       const r = await apiWithRetry(`/api/session/${state.sid}/image`, fd);
-      note.remove();
+      clearWait(note);
       mergeState(r);
       renderMessages(r.messages || []);
-    } catch (e) { note.remove(); toast(e.message); }
+    } catch (e) {
+      clearWait(note);
+      if (sessionGone(e)) { await ensureSession(); return uploadImages([file]); }
+      toast(e.message);
+    }
   }
 }
 
 /* 语音 */
 async function startRecording() {
+  if (state.recording) return;                // 录音中再点麦克风：忽略，不重复起流
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find(m => MediaRecorder.isTypeSupported(m)) || '';
     const rec = new MediaRecorder(stream, { mimeType: mime });
     state.audioChunks = [];
     rec.ondataavailable = e => { if (e.data.size) state.audioChunks.push(e.data); };
@@ -381,9 +633,22 @@ async function startRecording() {
     state.recording = rec;
     state.startedAt = Date.now();
     $('#voiceOverlay').hidden = false;
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      const an = ac.createAnalyser();
+      an.fftSize = 256;
+      ac.createMediaStreamSource(stream).connect(an);
+      const buf = new Uint8Array(an.frequencyBinCount);
+      state.meter = setInterval(() => {
+        an.getByteFrequencyData(buf);
+        const v = Math.min(100, Math.round(buf.reduce((a, b) => a + b, 0) / buf.length * 2));
+        const bar = $('#voiceMeter');
+        if (bar) bar.style.width = v + '%';
+      }, 120);
+    } catch (_) {}
     state.timer = setInterval(() => {
       const s = Math.floor((Date.now() - state.startedAt) / 1000);
-      $('#voiceTime').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+      $('#voiceTime').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0') + (s >= 45 ? `（还剩 ${60 - s} 秒）` : '');
       if (s >= 60) finishRecording();
     }, 250);
   } catch (e) { toast('无法使用麦克风，请检查权限'); }
@@ -391,7 +656,7 @@ async function startRecording() {
 
 function finishRecording() {
   if (!state.recording) return;
-  clearInterval(state.timer);
+  clearInterval(state.timer); clearInterval(state.meter);
   state.recording.stop();
   state.recording = null;
   $('#voiceOverlay').hidden = true;
@@ -402,6 +667,7 @@ function finishRecording() {
 
 function cancelRecording() {
   if (state.recording) { clearInterval(state.timer); state.recording.stop(); state.recording = null; }
+  state.audioChunks = []; state.audioBlob = null;   // 取消就作废，别让上次录音串场
   $('#voiceOverlay').hidden = true;
 }
 
@@ -411,7 +677,14 @@ async function transcribe(blob) {
   try {
     const fd = new FormData();
     fd.append('file', blob, 'voice.webm');
-    const r = await apiWithRetry(`/api/session/${state.sid}/asr`, fd);
+    let r;
+    try {
+      r = await apiWithRetry(`/api/session/${state.sid}/asr`, fd);
+    } catch (e) {
+      if (sessionGone(e)) { await ensureSession(); return transcribe(blob); }
+      throw e;
+    }
+    try { const au = $('#transcriptAudio'); au.src = URL.createObjectURL(blob); au.style.display = 'block'; } catch (_) {}
     if (!r.transcript) { toast('没听清，再说一次'); return; }
     $('#transcript').value = r.transcript;
     $('#transcriptSheet').hidden = false;
@@ -419,16 +692,22 @@ async function transcribe(blob) {
 }
 
 /* ---------------- 律师意见 ---------------- */
-async function buildReport() {
+async function buildReport(force = false) {
   if (state.busy) return;
+  if (!force && state.report) { renderReport(state.report); go('report'); return; }   // 回看秒开
   state.busy = true;
+  $('#reportBody').innerHTML = ['58%', '80%', '70%', '64%'].map(w =>
+    `<div class="skel" style="width:${w}%"></div>`).join('') +
+    '<div class="hint" style="text-align:center;padding:20px 0">正在整理意见…</div>';
+  go('report');
   toast('正在整理意见…', 8000);
   try {
     const rep = await apiWithRetry(`/api/session/${state.sid}/report`, {});
-    state.report = rep;
+    state.report = rep; state.factsUpdated = false;
     renderReport(rep);
     go('report');
   } catch (e) {
+    if (sessionGone(e)) { await ensureSession(); return buildReport(); }
     const detail = e.payload;
     let hint = '';
     if (detail && detail.missing) hint = detail.message || '还差一点信息，先把下面这些确认一下';
@@ -439,7 +718,7 @@ async function buildReport() {
     const card = el('div', 'offer-card');
     card.innerHTML = `<div class="offer-text">意见没生成出来：${esc(hint)}</div>
       <button class="btn btn-primary btn-sm">再试一次</button>`;
-    card.querySelector('button').addEventListener('click', () => { card.remove(); buildReport(); });
+    card.querySelector('button').addEventListener('click', () => { card.remove(); buildReport(true); });
     $('#chatList').appendChild(card);
     scrollBottom();
   } finally { state.busy = false; }
@@ -462,7 +741,9 @@ function renderReport(r) {
   const gateRows = (c.gates || []).map(g => `
     <div class="gate-row">
       <div class="gate-dot ${g.status}">${g.status === 'pass' ? '✓' : '!'}</div>
-      <div><b>${esc(g.name.replace('第一层 · ', '').replace('第二层 · ', ''))}</b><span>${esc(g.message)}</span></div>
+      <div><b>${esc(g.name.replace('第一层 · ', '').replace('第二层 · ', ''))}</b><span>${esc(g.message)}</span>
+        ${(g.detail || []).length ? `<details class="gate-detail"><summary>细项</summary>${g.detail.map(d => `<div class="dim-note">· ${esc(d)}</div>`).join('')}</details>` : ''}
+      </div>
     </div>`).join('');
 
   const worthRow = `
@@ -479,7 +760,7 @@ function renderReport(r) {
 
   const calc = (c.calc_items || []).filter(i => i.primary);
   const calcHtml = calc.length ? `
-    <div class="section">
+    <div class="section" id="sec-calc">
       <div class="section-head"><div class="section-title">金额构成</div><div class="section-hint">参考值，非承诺</div></div>
       <div class="card">
         ${calc.map(i => `<div class="mat"><div class="mat-top"><div class="mat-name">${esc(i.label)}</div><div class="mat-name">${money(i.amount)}</div></div><div class="mat-meta"><span>${esc(i.detail)}</span></div></div>`).join('')}
@@ -516,16 +797,16 @@ function renderReport(r) {
       <div class="a-body">${esc(a.text)}<div class="a-src">施行 ${esc(a.effective || '')} · ${esc(a.chapter || '')}</div></div>
     </details>`).join('');
 
+  const hi = (t) => esc(String(t)).replace(/&lt;mark&gt;/g,'<mark>').replace(/&lt;\/mark&gt;/g,'</mark>');
   const cases = (r.citations?.cases || []).map(x => `
-    <div class="case">
-      <div class="case-t">${esc(x.title)}</div>
-      <div class="case-src">${esc(x.source)}</div>
+    <details class="case">
+      <summary><div class="case-t">${esc(x.title)}</div><div class="case-src">${esc(x.source)}</div></summary>
       <div class="case-p"><b>争议焦点</b> ${esc(x.focus)}</div>
       <div class="case-p"><b>裁判要旨</b> ${esc(x.holding)}</div>
       <div class="case-p"><b>可比之处</b> ${esc(x.comparable)}</div>
       <div class="case-p"><b>不能类比</b> ${esc(x.limit)}</div>
       ${x.source_url ? `<div class="cites"><a class="cite" href="${esc(x.source_url)}" target="_blank" rel="noopener">查看官方原文</a></div>` : ''}
-    </div>`).join('');
+    </details>`).join('');
 
   const confidence = c.confidence || {};
   const confCount = (confidence.from_image || []).length;
@@ -533,64 +814,95 @@ function renderReport(r) {
 
   const openQs = (r.open_questions || []);
   $('#reportBody').innerHTML = `
+    <div class="print-head" style="display:none">
+      <b>劳动仲裁初步咨询意见（${esc(r.city || '')}口径）</b> · 生成于 ${esc(r.generated_at || '')} · 仅供参考，不构成律师意见
+    </div>
     <div class="opinion-head">
-      <div class="opinion-kicker">初步咨询意见</div>
-      <div class="opinion-date">${esc(r.generated_at || '')}${r.preliminary ? ' · 待补充材料后再确认' : ''}</div>
+      <div class="opinion-kicker">${r.preliminary ? '初步咨询意见' : '咨询意见'}${state.factsUpdated ? ' · <span style="color:#B42318">事实已更新，建议重新生成</span>' : ''}</div>
+      <div class="opinion-date">${esc(r.generated_at || '')}${r.preliminary ? ' · 待补充材料后再确认' : ''}${r.facts_snapshot ? ` · 基于 ${Object.keys(r.facts_snapshot).length} 项确认事实` : ''}</div>
+      <div class="toc">
+        ${[['结论', 'sec-conclusion'], ['金额', 'sec-calc'], ['材料', 'sec-materials'], ['提交', 'sec-venue'], ['法条', 'sec-cites']].filter(([_, id]) => document.getElementById(id) || true).map(([t, id]) => `<button class="cite" data-jump="${id}">${t}</button>`).join(' ')}
+      </div>
     </div>
     <div class="report-hero ${status === 'warn' ? 'is-warn' : status === 'bad' ? 'is-bad' : ''}">
       <div class="verdict">${esc(verdictText(c.label))}</div>
       <div class="verdict-desc">${esc(c.one_liner)}</div>
       <div class="metrics">
-        <div class="metric"><div class="m-v">${c.claim_amount ? money(c.claim_amount) : '待确认'}</div><div class="m-l">可主张金额（参考）</div></div>
-        <div class="metric"><div class="m-v ${days !== null && days !== undefined && days <= 60 ? 'hot' : ''}">${days === null || days === undefined ? '未起算' : Math.max(0, days) + ' 天'}</div><div class="m-l">仲裁时效剩余</div></div>
+        <div class="metric"><div class="m-v">${c.claim_amount ? money(c.claim_amount) : '待确认'}</div><div class="m-l">可主张金额（参考）</div>
+          ${r.claim_amount_rmb ? `<div class="m-rmb">${esc(r.claim_amount_rmb)}</div>` : ''}</div>
+        <div class="metric"><div class="m-v ${days !== null && days !== undefined && days <= 60 ? 'hot' : ''}">${days === null || days === undefined ? '未起算' : Math.max(0, days) + ' 天'}</div><div class="m-l">仲裁时效剩余${c.deadline?.start_date ? `（自 ${esc(c.deadline.start_date)} 起算）` : ''}</div></div>
       </div>
       ${(c.decision === 'not_recommended' && r.evidence) ? `<div class="evidence-hint">当前材料证据强度 ${r.evidence.score}/100，补齐后再评估一次更准。</div>` : ''}
       <div class="gate-strip">${gateRows}${worthRow}</div>
+      ${(c.deadline?.exceptions || []).length ? `<div class="dim-note" style="margin-top:8px">${c.deadline.exceptions.map(x => '· ' + esc(x)).join('<br>')}</div>` : ''}
+      ${(c.dimensions || []).length ? `<div class="dims">${(c.dimensions || []).map(d => `
+        <div class="dim"><div class="dim-top"><span>${esc(d.label || d.key || '')}</span><span>${d.score}</span></div>
+        <div class="dim-bar"><i style="width:${Math.max(0, Math.min(100, d.score))}%"></i></div>
+        <div class="dim-note">${esc(d.note || '')}</div></div>`).join('')}</div>` : ''}
     </div>
 
-    <div class="section">
+    <div class="section" id="sec-conclusion">
       <div class="section-head"><div class="section-title">为什么是这个结论</div><div class="section-hint">${confCount ? `其中 ${confCount} 项经材料核对` : '依据你确认的口述事实'}</div></div>
       <div class="card">${reasons}</div>
     </div>
 
+    ${c.alternative && c.decision === 'better_alternative' ? `<div class="section">
+      <div class="section-head"><div class="section-title">更快的路</div><div class="section-hint">先试这个</div></div>
+      <div class="card card-pad"><div class="hint" style="padding:0"><b>${esc(c.alternative.title || '')}</b>——${esc(c.alternative.why || '')}</div></div>
+    </div>` : ''}
+
     ${openQs.length ? `<div class="section">
       <div class="section-head"><div class="section-title">还需要你补一句的</div><div class="section-hint">影响个别结论</div></div>
       <div class="card card-pad">
-        <div class="hint" style="padding:0">${openQs.map(q => esc(q.label)).join('、')}——这几项我还没问到，上面的意见先按已知情况给。</div>
+        <div class="hint" style="padding:0">这几项我还没问到，上面的意见先按已知情况给：
+          <button class="cite" id="gotoFill" style="margin:6px 8px 0 0">回去补这几句</button></div>
       </div>
     </div>` : ''}
 
     ${calcHtml}
 
-    <div class="section">
+    <div class="section" id="sec-materials">
       <div class="section-head"><div class="section-title">要带什么</div><div class="section-hint">${matList.length} 项</div></div>
       <div class="card">
-        <div class="card-pad" style="padding-bottom:0"><div class="hint" style="padding:0 0 12px">这是你带去仲裁委交的材料，照着准备就行，不用发给我。</div></div>
+        <div class="card-pad" style="padding-bottom:0"><div class="hint" style="padding:0 0 12px">这是你带去仲裁委交的材料，照着准备就行，不用发给我。${r.evidence?.gaps?.length ? '<br><b>目前最短板：</b>' + esc(r.evidence.gaps.join('；')) : ''}</div>
+          ${(r.evidence?.dimensions || []).length ? `<div class="dims" style="margin-top:6px">${r.evidence.dimensions.map(d => `
+            <div class="dim"><div class="dim-top"><span>${esc(d.label || d.key || '')}</span><span>${d.score}</span></div>
+            <div class="dim-bar"><i style="width:${Math.max(0, Math.min(100, d.score))}%"></i></div></div>`).join('')}</div>` : ''}</div>
         ${materials}
       </div>
     </div>
 
     <div class="section">
-      <div class="section-head"><div class="section-title">去哪儿提交</div><div class="section-hint">按杭州</div></div>
+      <div class="section-head"><div class="section-title">接下来会发生什么</div><div class="section-hint">一般流程</div></div>
+      <div class="card">
+        ${[["提交申请", "当场或线上交材料，符合条件当天受理"], ["受理与组庭", "5 日内决定是否受理，随后组成仲裁庭"], ["开庭与调解", "开庭通知提前 5 日送达；庭上会先问愿不愿意调解"], ["裁决", "自受理之日起 45 日内审结，复杂的可延长 15 日"]].map(([s2, d2], i) => `
+          <div class="mat"><div class="mat-top"><div class="mat-name">第 ${i + 1} 步 · ${esc(s2)}</div></div><div class="mat-meta"><span>${esc(d2)}</span></div></div>`).join('')}
+        <div class="mat"><div class="mat-meta"><span>依据：《劳动争议调解仲裁法》第二十九条、第三十五条、第四十三条。</span></div></div>
+      </div>
+    </div>
+
+    <div class="section" id="sec-venue">
+      <div class="section-head"><div class="section-title">去哪儿提交</div><div class="section-hint">按${esc(r.city || '杭州市')}口径</div></div>
+      <div class="card card-pad"><div class="hint" style="padding:0">劳动仲裁不收费，经费由财政保障（《劳动争议调解仲裁法》第五十三条）；请律师不是必须的。</div></div>
       <div class="card">${venues}</div>
     </div>
 
-    <div class="section">
+    <div class="section" id="sec-cites">
       <div class="section-head"><div class="section-title">依据的法条</div><div class="section-hint">${(r.citations?.articles || []).length} 条</div></div>
       <div class="card">${articles}</div>
     </div>
 
-    ${cases ? `<div class="section"><div class="section-head"><div class="section-title">类似案件</div><div class="section-hint">仅供参考</div></div><div class="card">${cases}</div></div>` : ''}
+    ${cases ? `<div class="section"><div class="section-head"><div class="section-title">类似案件</div><div class="section-hint">按${esc((state.data?.slots?.dispute_types?.value || []).map(v => (OPTION_LABELS.dispute_types[v] || v)).join('、') || '争议类型')}匹配 · 仅供参考</div></div><div class="card">${cases}</div></div>` : ''}
 
-    <div class="notice">
-      ${esc(r.disclaimer)}
-      <div style="margin-top:10px"><button class="link-btn" id="backToChat">情况有变化？回去接着补</button></div>
-      <div style="margin-top:8px">${(r.hotlines || []).map(h => `<a href="tel:${esc(h.tel)}" class="cite">${esc(h.label)} ${esc(h.tel)}</a>`).join(' ')}</div>
-    </div>`;
+`;
 
   $('#backToChat')?.addEventListener('click', () => go('chat'));
+  $('#gotoFill')?.addEventListener('click', () => { go('chat'); $('#textInput')?.focus(); });
   $$('#reportBody [data-copy]').forEach(b => b.addEventListener('click', () => copy(b.dataset.copy)));
   $$('#reportBody .cite[data-law]').forEach(b => b.addEventListener('click', () => showArticle(b.dataset.law)));
+  $$('#reportBody [data-jump]').forEach(b => b.addEventListener('click', () => {
+    document.getElementById(b.dataset.jump)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }));
 }
 
 function citeChips(ids) {
@@ -605,6 +917,8 @@ function citeChips(ids) {
 function lawShort(id) {
   return ({ laodonghetongfa: '劳动合同法', tiaojiezhongcai: '调解仲裁法', laodongfa: '劳动法',
     nianxiujia: '年休假条例', shebaofa: '社会保险法', jiancha: '监察条例',
+    gongshang: '工伤保险条例', shishitiaoli: '实施条例', nmgxz: '农民工工资支付条例',
+    jiuye: '就业促进法',
     sfjs1: '司法解释（一）', sfjs2: '司法解释（二）' })[id] || id;
 }
 
@@ -621,55 +935,16 @@ async function copy(text) {
 }
 
 /* 导出 */
-async function exportImage() {
-  if (!state.report) return;
-  toast('正在生成长图…', 5000);
-  const canvas = await html2canvas($('#reportBody'), { backgroundColor: '#F6F5F1', scale: 2, useCORS: true });
-  const a = document.createElement('a');
-  a.href = canvas.toDataURL('image/png');
-  a.download = '劳动仲裁咨询意见.png';
-  a.click();
-  toast('已保存到相册/下载');
-}
-
-async function exportPdf() {
-  if (!state.report) return;
-  toast('正在生成 PDF…', 6000);
-  const canvas = await html2canvas($('#reportBody'), { backgroundColor: '#ffffff', scale: 2, useCORS: true });
-  const img = canvas.toDataURL('image/jpeg', 0.94);
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
-  const pw = 210, ph = 297, margin = 8;
-  const iw = pw - margin * 2;
-  const ih = canvas.height * iw / canvas.width;
-  let left = ih, pos = margin;
-  pdf.addImage(img, 'JPEG', margin, pos, iw, ih);
-  left -= (ph - margin * 2);
-  while (left > 0) {
-    pos = margin - (ih - left);
-    pdf.addPage();
-    pdf.addImage(img, 'JPEG', margin, pos, iw, ih);
-    left -= (ph - margin * 2);
-  }
-  pdf.save('劳动仲裁咨询意见.pdf');
-  toast('PDF 已保存');
-}
-
-function speak() {
-  if (!state.report) return;
-  const c = state.report.conclusion;
-  const text = [verdictText(c.label), c.one_liner, ...(c.reasons || []).map((x, i) => `第${i + 1}，${x.text}`)].join('。');
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'zh-CN'; u.rate = 1;
-  speechSynthesis.cancel();
-  speechSynthesis.speak(u);
-  toast('正在朗读');
-}
-
 async function rebuttal() {
   openSheet('公司会怎么反驳你', '<div class="hint">正在准备…</div>');
   try {
-    const r = await api(`/api/session/${state.sid}/rebuttal`, {});
+    let r;
+    try {
+      r = await api(`/api/session/${state.sid}/rebuttal`, {});
+    } catch (e) {
+      if (sessionGone(e)) { await ensureSession(); return rebuttal(); }
+      throw e;
+    }
     $('#sheetBody').innerHTML = (r.items || []).map((x, i) => `
       <div class="case">
         <div class="case-t">${i + 1}. ${esc(x.attack)}</div>
@@ -677,26 +952,58 @@ async function rebuttal() {
         <div class="case-p"><b>你可以说</b> ${esc(x.reply)}</div>
         <div class="cites">${(x.citations || []).map(id => `<button class="cite" data-law="${esc(id)}">${esc(lawShort(id.split(':')[0]))} 第 ${esc(id.split(':')[1])} 条</button>`).join('')}</div>
       </div>`).join('') || '<div class="hint">暂无内容</div>';
+    const fullText = (r.items || []).map((x, i) =>
+      `${i + 1}. ${x.attack}\n对方会拿：${x.evidence}\n你可以说：${x.reply}`).join('\n\n');
+    const cp = document.createElement('div');
+    cp.className = 'sheet-actions';
+    cp.innerHTML = '<button class="btn btn-ghost">复制全文</button>';
+    cp.querySelector('button').addEventListener('click', () => copy(fullText));
+    $('#sheetBody').appendChild(cp);
     $$('#sheetBody .cite[data-law]').forEach(b => b.addEventListener('click', () => showArticle(b.dataset.law)));
-  } catch (e) { $('#sheetBody').innerHTML = `<div class="hint">${esc(e.message)}</div>`; }
+  } catch (e) {
+    $('#sheetBody').innerHTML = `<div class="hint">${esc(e.message)}</div>
+      <div class="sheet-actions"><button class="btn btn-primary" id="rebutRetry">再试一次</button></div>`;
+    $('#rebutRetry')?.addEventListener('click', () => { $('#sheetBody').innerHTML = '<div class="hint">正在准备…</div>'; rebuttal(); });
+  }
 }
 
 /* ---------------- 法条 ---------------- */
 async function loadLaws() {
   try {
-    const r = await api('/api/laws', undefined, 'GET');
+    let r = null;
+    try { r = JSON.parse(sessionStorage.getItem('lawIndex') || 'null'); } catch (_) {}
+    if (!r) { r = await api('/api/laws', undefined, 'GET'); sessionStorage.setItem('lawIndex', JSON.stringify(r)); }
     const groups = {};
     (r.laws || []).forEach(l => {
       const k = l.category || '法律';
       (groups[k] = groups[k] || []).push(l);
     });
-    $('#lawList').innerHTML = Object.entries(groups).map(([cat, laws]) => `
-      <div class="law-group-title">${esc(cat)}</div>
-      ${laws.map(l => `<button class="law-item" data-lawid="${esc(l.id)}">
-        <div><div class="l-n">${esc(l.title)}</div><div class="l-c">施行 ${esc(l.effective || '')}</div></div>
-        <div class="l-r">${l.count} 条</div></button>`).join('')}`).join('');
-    $$('#lawList [data-lawid]').forEach(b => b.addEventListener('click', () => openLaw(b.dataset.lawid)));
-    $('#lawList').dataset.loaded = '1';
+    const cats = Object.keys(groups);
+    const recentHtml = () => {
+      try {
+        const recent = JSON.parse(sessionStorage.getItem('lawRecent') || '[]');
+        if (!recent.length) return '';
+        const titles = { laodonghetongfa: '劳动合同法', tiaojiezhongcai: '调解仲裁法', laodongfa: '劳动法', shebaofa: '社会保险法', sfjs1: '司法解释（一）', sfjs2: '司法解释（二）', nianxiujia: '年休假条例', jiancha: '监察条例', gongshang: '工伤保险条例', shishitiaoli: '实施条例', nmgxz: '农民工工资支付条例', jiuye: '就业促进法' };
+        return `<div class="law-group-title">最近看过</div><div class="cites" style="margin:0 0 10px">${recent.map(x =>
+          `<button class="cite" data-law="${esc(x)}">${esc(titles[x.split(':')[0]] || x)}</button>`).join(' ')}</div>`;
+      } catch (_) { return ''; }
+    };
+    const render = (cat) => {
+      const shown = cat ? { [cat]: groups[cat] } : groups;
+      $('#lawList').innerHTML = recentHtml() + (cats.length > 1
+        ? `<div class="cites" style="margin-bottom:8px">${['', ...cats].map(c2 =>
+            `<button class="cite" data-cat="${esc(c2)}">${c2 || '全部'}</button>`).join('')}</div>` : '')
+        + Object.entries(shown).map(([c3, list]) =>
+            `<div class="law-group-title">${esc(c3)}</div>${list.map(l => `<button class="law-item" data-lawid="${esc(l.id)}">
+              <div><div class="l-n">${esc(l.title)}</div><div class="l-c">施行 ${esc(l.effective || '')}</div></div>
+              <div class="l-r">${l.count} 条</div></button>`).join('')}`).join('');
+      $$('#lawList [data-lawid]').forEach(b => b.addEventListener('click', () => openLaw(b.dataset.lawid)));
+      $$('#lawList [data-cat]').forEach(b => b.addEventListener('click', () => render(b.dataset.cat)));
+    };
+    const total = (r.laws || []).reduce((n, l) => n + (l.count || 0), 0);
+    $('#lawSearch').placeholder = `搜 ${total} 条法条，如「二倍工资」「时效」`;
+    render('');
+
   } catch (e) { toast(e.message); }
 }
 
@@ -706,7 +1013,14 @@ async function openLaw(id) {
   $('#sheetTitle').textContent = law.title;
   $('#sheetBody').innerHTML = `
     <div class="hint" style="padding:0 0 10px">${esc(law.flavor)}<br>施行 ${esc(law.effective || '')} · ${esc(law.issuer)}</div>
-    ${law.articles.map(a => `<div class="article-item"><div class="a-no">${esc(a.no_cn)}</div><div class="a-txt" style="-webkit-line-clamp:6">${esc(a.text)}</div></div>`).join('')}`;
+    <input id="lawFilter" class="search-input" placeholder="在本法内筛选，如「经济补偿」" style="width:100%;margin-bottom:10px">
+    <div id="lawArticles">${law.articles.map(a => `<div class="article-item" data-kw="${esc(a.no_cn)}${esc(a.text)}"><div class="a-no">${esc(a.no_cn)}</div><div class="a-txt" style="-webkit-line-clamp:6">${esc(a.text)}</div></div>`).join('')}</div>`;
+  $('#lawFilter')?.addEventListener('input', e => {
+    const kw = e.target.value.trim();
+    $$('#lawArticles .article-item').forEach(it => {
+      it.style.display = !kw || it.dataset.kw.includes(kw) ? '' : 'none';
+    });
+  });
 }
 
 async function searchLaws() {
@@ -731,14 +1045,34 @@ async function showArticle(id) {
       <div class="hint" style="padding:12px 0 0">施行 ${esc(a.effective || '')} · ${esc(a.chapter || '')}<br>
         在官方数据库搜索《${esc(a.law)}》即可核对原文与版本。</div>
       <div class="sheet-actions">
+        ${a.no > 1 ? '<button class="btn btn-ghost" id="prevArt">上一条</button>' : ''}
         <button class="btn btn-ghost" id="copyArticle">复制原文</button>
+        <button class="btn btn-ghost" id="openWholeLaw">看整部法</button>
+        ${a.no < (a.total || 0) ? '<button class="btn btn-ghost" id="nextArt">下一条</button>' : ''}
         <a class="btn btn-primary" href="https://flk.npc.gov.cn/" target="_blank" rel="noopener">打开官方数据库</a>
       </div>`;
+    try {
+      const rec = JSON.parse(sessionStorage.getItem('lawRecent') || '[]');
+      const nid = `${a.law_id}:${a.no}`;
+      sessionStorage.setItem('lawRecent', JSON.stringify([nid, ...rec.filter(x => x !== nid)].slice(0, 5)));
+    } catch (_) {}
+    $('#copyArticle').addEventListener('click', () => copy(`《${a.law}》${a.no_cn}：${a.text}`));
+    $('#prevArt')?.addEventListener('click', () => showArticle(`${a.law_id}:${a.no - 1}`));
+    $('#nextArt')?.addEventListener('click', () => showArticle(`${a.law_id}:${a.no + 1}`));
+    $('#openWholeLaw').addEventListener('click', () => { closeSheets(); openLaw(a.law_id); });
     $('#copyArticle').addEventListener('click', () => copy(a.text));
   } catch (e) { $('#sheetBody').innerHTML = `<div class="hint">${esc(e.message)}</div>`; }
 }
 
 /* ---------------- 设置 ---------------- */
+function settingsA11y() {
+  const map = { setBase: '服务地址', setKey: 'API 密钥', setTextModel: '文本模型', setVisionModel: '视觉模型' };
+  Object.entries(map).forEach(([id, label]) => {
+    const el = document.getElementById(id);
+    if (el && !el.getAttribute('aria-label')) el.setAttribute('aria-label', label);
+  });
+}
+
 async function loadSettings() {
   const s = await api('/api/settings', undefined, 'GET');
   $('#setBase').value = s.base_url || '';
@@ -747,10 +1081,30 @@ async function loadSettings() {
   $('#setTextModel').value = s.text_model || '';
   $('#setVisionModel').value = s.vision_model || '';
   $('#connResult').textContent = '';
+  api('/api/bridge/status', undefined, 'GET').then(st => {
+    const el = $('#bridgeStatus');
+    if (el) el.textContent = st.mode === 'manual'
+      ? (st.pending ? `桥路积压 ${st.pending} 条${st.oldest_wait_s > 90 ? '——应答方可能离线' : ''}`
+                    : (st.responder_online === false ? '应答方可能离线（有请求长期无应答）' : '桥路正常，无积压'))
+      : '当前为 API 模式，无需桥路';
+  }).catch(() => {});
+  const CITY_AGE = (city) => {
+    const d = new Date(city.verified_at);
+    const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+    return days > 90 ? `⚠️ ${city.city}口径核对于 ${city.verified_at}（${days} 天前），建议复核最低工资与社平工资` : `✓ ${city.city}口径 ${city.verified_at} 核对`;
+  };
+  api('/api/city', undefined, 'GET').then(c => {
+    const el = $('#bridgeStatus');
+    if (el) el.textContent += '　|　' + CITY_AGE(c);
+  }).catch(() => {});
 }
 
 async function saveSettings() {
   const key = $('#setKey').value.trim();
+  const baseRaw = $('#setBase').value.trim();
+  if (baseRaw && !/^https?:\/\//.test(baseRaw)) { $('#connResult').textContent = '服务地址要以 http(s):// 开头'; return; }
+  const saveBtn = [...document.querySelectorAll('#view-settings button')].find(b => b.textContent.trim() === '保存');
+  if (saveBtn) saveBtn.disabled = true;
   const body = {
     base_url: $('#setBase').value.trim(),
     text_model: $('#setTextModel').value.trim(),
@@ -762,8 +1116,16 @@ async function saveSettings() {
     $('#setKey').value = '';
     $('#setKey').placeholder = s.api_key;
     $('#connResult').textContent = '已保存';
-    toast('设置已保存');
+    toast(s.mode === 'manual' ? '已切到演示桥路模式——需要会话内应答方在线' : '设置已保存');
+    if (s.mode === 'manual') {
+      try {
+        const st = await api('/api/bridge/status', undefined, 'GET');
+        const el = $('#bridgeStatus');
+        if (el) el.textContent = st.pending ? `桥路积压 ${st.pending} 条——应答方没跟上` : '桥路正常，无积压';
+      } catch (_) {}
+    }
   } catch (e) { $('#connResult').textContent = e.message; }
+  finally { const b = [...document.querySelectorAll('#view-settings button')].find(b => b.textContent.trim() === '保存'); if (b) b.disabled = false; }
 }
 
 async function testConn() {
@@ -787,6 +1149,7 @@ async function resetSettings() {
 }
 
 /* ---------------- 弹层 ---------------- */
+let _sheetReturnFocus = null;
 function openSheet(title, html) {
   $('#sheetTitle').textContent = title;
   $('#sheetBody').innerHTML = html;
@@ -794,6 +1157,9 @@ function openSheet(title, html) {
 }
 
 function closeSheets() {
+  try { if (_sheetReturnFocus) { _sheetReturnFocus.focus(); _sheetReturnFocus = null; } } catch (_) {}
+  const au = $('#transcriptAudio');
+  if (au && !au.paused) au.pause();
   $$('.sheet').forEach(s => { s.hidden = true; });
 }
 
@@ -816,9 +1182,23 @@ function bind() {
   $('#homeSettings').addEventListener('click', (e) => { e.preventDefault(); go('settings'); });
 
   $('#sendBtn').addEventListener('click', onSend);
-  $('#textInput').addEventListener('input', autoGrow);
+  ['dragover', 'drop'].forEach(evt => window.addEventListener(evt, e => {
+    if (!$('#view-chat').classList.contains('active')) return;
+    e.preventDefault();
+    const files = [...(e.dataTransfer?.files || [])].filter(f => /^image\//.test(f.type || ''));
+    if (evt === 'drop' && files.length) uploadImages(files);
+  }));
+  $('#textInput').addEventListener('input', () => {
+    autoGrow();                                             // 打字随内容长高 + 点亮发送键
+    try { sessionStorage.setItem('draft', $('#textInput').value); } catch (_) {}
+  });
+  try {
+    const draft = sessionStorage.getItem('draft');
+    if (draft) { $('#textInput').value = draft; autoGrow(); $('#sendBtn').disabled = !draft.trim(); }
+  } catch (_) {}
   $('#textInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 720) { e.preventDefault(); onSend(); }
+    if (e.isComposing || e.keyCode === 229) return;   // 中文输入法选词回车不是发送
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); }   // 移动端 enterkeyhint=send，同样直发
   });
 
   $('#attachBtn').addEventListener('click', () => { $('#attachSheet').hidden = false; });
@@ -826,10 +1206,98 @@ function bind() {
   $('#pickAlbum').addEventListener('click', () => { closeSheets(); $('#albumInput').click(); });
   $('#cameraInput').addEventListener('change', e => { uploadImages([...e.target.files]); e.target.value = ''; });
   $('#albumInput').addEventListener('change', e => { uploadImages([...e.target.files]); e.target.value = ''; });
+  window.addEventListener('paste', e => {
+    if (!$('#view-chat').classList.contains('active')) return;
+    const files = [...(e.clipboardData?.files || [])].filter(f => /^image\//.test(f.type || ''));
+    if (files.length) { e.preventDefault(); uploadImages(files); }
+  });
 
+  const v0 = new URLSearchParams(location.search).get('view') || (location.hash || '').replace('#/', '');
+  // 报告页刷新后没有渲染数据，落回对话页续会话（意见卡还在，点一下秒开缓存报告）
+  if (v0 && { chat: 1, laws: 1, settings: 1, report: 1, home: 1 }[v0]) go(v0 === 'report' ? 'chat' : v0, false);
+  if (v0 === 'chat' || v0 === 'report') ensureSession();   // 刷新不空屏：直接续上
+  applyTheme();
   $('#micBtn').addEventListener('click', startRecording);
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; });
+  const inst = document.createElement('button');
+  inst.className = 'link-btn'; inst.style.margin = '6px 0 0'; inst.textContent = '安装到桌面/主屏';
+  inst.addEventListener('click', async () => {
+    if (!deferredPrompt) { toast('当前浏览器不支持一键安装，可用「添加到主屏幕」'); return; }
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+  });
+  $('#themeRow')?.parentElement?.appendChild(inst);
   $('#voiceDone').addEventListener('click', finishRecording);
   $('#voiceCancel').addEventListener('click', cancelRecording);
+  $('#voiceCancel').textContent = '取消（Esc）';
+  // sheet 打开时焦点圈在面板内，关闭归还触发点
+  const sheetEl = $('.sheet:not([hidden]) .sheet-panel');
+  if (sheetEl) {
+    _sheetReturnFocus = document.activeElement;
+    setTimeout(() => $('.sheet-close[data-close]')?.focus(), 60);
+    sheetEl.addEventListener('keydown', function trap(e) {
+      if (e.key !== 'Tab') return;
+      const f = [...sheetEl.querySelectorAll('button, [href], input, textarea')].filter(x => !x.disabled && x.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+  }
+  [['auto', '跟随系统'], ['light', '浅色'], ['dark', '深色']].forEach(([v, label]) => {
+    const b = document.createElement('button');
+    b.className = 'chip subtle'; b.textContent = label; b.dataset.theme = v;
+    b.addEventListener('click', () => { localStorage.setItem('theme', v); applyTheme(); toast(label === 'auto' ? '已跟随系统' : `已切到${label}`); });
+    $('#themeRow')?.appendChild(b);
+  });
+  window.addEventListener('beforeprint', () => { $$('#reportBody details').forEach(d => d.open = true); });
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      const open = [...document.querySelectorAll('.sheet')].find(s => !s.hidden);
+      if (open) open.hidden = true;
+    }
+  });
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && state.recording) cancelRecording();
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      go('laws');
+      setTimeout(() => $('#lawSearch')?.focus(), 150);
+    }
+  });
+  // 服务探活：挂了就在页头挂横幅，别让用户对着白屏猜
+  const banner = $('#healthBanner');
+  if (banner && !banner.querySelector('.banner-close')) {
+    const x = document.createElement('button');
+    x.textContent = '×'; x.className = 'banner-close';
+    x.setAttribute('aria-label', '关闭提示');
+    x.style.cssText = 'float:right;background:none;border:0;color:inherit;font-size:1.1em;cursor:pointer;padding:0 4px';
+    x.addEventListener('click', () => banner.style.display = 'none');
+    banner.appendChild(x);
+  }
+  fetch('/api/health', { method: 'GET' }).then(r => r.json()).then(h => {
+    if (!h.ok) { $('#healthBanner').style.display = 'block'; return; }
+    if (h.asr_model === false) {
+      const mic = $('#micBtn');
+      mic.disabled = true;
+      mic.title = '语音模型未就绪，先打字也一样';
+    }
+  }).catch(() => {
+    if (navigator.onLine === false) {
+      const b = $('#healthBanner');
+      b.textContent = '当前离线——已缓存的法条库仍可以看，联网后再继续咨询。';
+      b.style.display = 'block';
+    } else { $('#healthBanner').style.display = 'block'; }
+  });
+  window.addEventListener('online', () => { $('#healthBanner').style.display = 'none'; });
+  navigator.serviceWorker?.addEventListener('controllerchange', () => toast('已更新到最新版本', 2000));
+  window.addEventListener('offline', () => {
+    const b = $('#healthBanner');
+    b.textContent = '当前离线——已缓存的法条库仍可以看，联网后再继续咨询。';
+    b.style.display = 'block';
+  });
   $('#transcriptSend').addEventListener('click', async () => {
     const text = $('#transcript').value.trim();
     $('#transcriptSheet').hidden = true;
@@ -837,12 +1305,14 @@ function bind() {
   });
   $('#transcriptRetry').addEventListener('click', () => { $('#transcriptSheet').hidden = true; startRecording(); });
 
-  $('#exportImg').addEventListener('click', exportImage);
-  $('#exportPdf').addEventListener('click', exportPdf);
-  $('#speakBtn').addEventListener('click', speak);
   $('#rebutBtn').addEventListener('click', rebuttal);
 
   $('#lawSearch').addEventListener('keydown', e => { if (e.key === 'Enter') searchLaws(); });
+  let _lawSearchT = null;
+  $('#lawSearch').addEventListener('input', () => {          // 边打边搜（400ms 防抖）
+    clearTimeout(_lawSearchT);
+    _lawSearchT = setTimeout(searchLaws, 400);
+  });
   $('#lawSearch').addEventListener('input', e => { if (!e.target.value.trim()) loadLaws(); });
 
   $('#saveSettings').addEventListener('click', saveSettings);

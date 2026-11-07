@@ -51,12 +51,13 @@ def test_legal_termination_n_is_primary():
     assert primary[0]["key"] == "n_or_2n"
 
 
-def test_personal_resignation_gets_zero():
+def test_personal_resignation_no_zero_line_with_guidance():
     r = calc_all({"start_date": "2024-01-01", "end_date": "2026-01-01", "avg_wage": 8000,
                   "dispute_types": ["termination"], "termination_by": "employee"}, CITY, T,
                  termination={"resign_ground": "personal"})
     assert r.total == 0
-    assert any(i["key"] == "n_amount_0" for i in r.items)
+    assert not any(i["amount"] == 0 for i in r.items)          # 不出 0 元金额行
+    assert any("个人原因辞职" in n for n in r.notes)            # 给引导话术
 
 
 def test_article38_resignation_keeps_n():

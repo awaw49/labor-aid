@@ -53,5 +53,36 @@ def run(html_path, law_ids):
         print(f"{lid:14s} {ok}/{len(items)} 逐字命中{'，未命中: ' + str(misses) if misses else ' ✓'}")
         return misses
 
+def whitelist_ids():
+    """从内核源码抽引用白名单（法条 id 集合）。"""
+    import glob
+    ids = set()
+    for f in glob.glob(os.path.join(ROOT, "app", "**", "*.py"), recursive=True):
+        src = open(f, encoding="utf-8").read()
+        ids |= set(re.findall(r'"([a-z0-9]+:\d+)"', src))
+    return ids
+
+
 if __name__ == "__main__":
-    run(sys.argv[1], sys.argv[2:])
+    args = sys.argv[1:]
+    only_wl = "--whitelist" in args
+    args = [a for a in args if a != "--whitelist"]
+    pg = args[0] if args else None
+    laws = args[1:]
+    if only_wl and pg:
+        wl = whitelist_ids()
+        by_law = {}
+        for cid in wl:
+            law, no = cid.split(":")
+            by_law.setdefault(law, set()).add(int(no))
+        pg_text = page_text(pg)
+        total_bad = []
+        for law, nos in sorted(by_law.items()):
+            core = json.load(open(f"{ROOT}/data/laws/{law}.json", encoding="utf-8"))
+            items = core if isinstance(core, list) else core.get("articles", [])
+            for a in items:
+                if a["no"] in nos and norm(a["text"]) not in pg_text:
+                    total_bad.append(f"{law}:{a['no']}")
+        print(f"白名单 {sum(len(v) for v in by_law.values())} 条 → 未命中: {total_bad if total_bad else '无 ✓'}")
+    else:
+        run(pg, laws)

@@ -34,7 +34,7 @@ def build_venue(city: dict, slots: dict, deadline: dict) -> list[dict]:
         blocks.append({
             "stage": "网上预申请（仲裁）" if o.get("type") == "web" else "手机办理（仲裁）",
             "name": o["name"],
-            "where": o.get("url") or ("浙里办 App" if o.get("type") == "app" else ""),
+            "where": o.get("url") or ("当地人社 App / 政务服务小程序" if o.get("type") == "app" else ""),
             "note": o["how"] + "。网上申请后仍须现场核验材料。",
             "actions": acts,
         })

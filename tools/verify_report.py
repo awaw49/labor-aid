@@ -79,17 +79,27 @@ def recompute(case, rep, today: date, sid: str):
             primary_key = "2n"
         if conf.get("termination_by") == "mutual":
             primary_key = "n_amount_mutual"
-        if conf.get("still_employed") != "yes" and start:
+        elif conf.get("termination_by") == "employee":
+            if rep["understanding"]["termination"].get("resign_ground") == "article38":
+                primary_key = "n_amount_38"
+            else:
+                primary_key = None
+                checks["自辞不出0元行"] = (True, not any(it["amount"] == 0 for it in items.values()))
+                checks["自辞有引导注记"] = (True, any("个人原因辞职" in n for n in rep["conclusion"]["calc_notes"]))
+        if primary_key and conf.get("still_employed") != "yes" and start:
             if primary_key in items:
                 checks[f"N/{primary_key}"] = (n_amount if primary_key != "2n" else round(n_amount * 2, 2),
                                               items[primary_key]["amount"])
             else:
                 checks[f"N/{primary_key}"] = ("应有项", f"缺失:{list(items)}")
-        elif "termination" in types and avg and not start:
+        elif primary_key and "termination" in types and avg and not start:
             # 入职日期缺失：不允许出现 0 元金额行，必须有口径注记
             checks["入职缺失不出0元行"] = (True, not any(it["amount"] == 0 for it in items.values()))
             checks["入职缺失有注记"] = (True, any("入职日期" in n for n in rep["conclusion"]["calc_notes"]))
 
+    if "no_contract" in types and conf.get("contract_state") == "none" and avg:
+        if not start:
+            checks["二倍工资缺入职有注记"] = (True, any("二倍工资" in n and "入职" in n for n in rep["conclusion"]["calc_notes"]))
     if "no_contract" in types and conf.get("contract_state") == "none" and start and avg:
         begin = start + timedelta(days=30)
         stop = min(end, start + timedelta(days=365))
@@ -191,6 +201,14 @@ CASES = [
                   "start_date": "2024-05-06", "end_date": "2026-11-10", "avg_wage": "8000",
                   "contract_state": "one", "termination_by": "employer", "prior_proceeding": "none",
                   "termination_reason": "连续旷工三天，按员工手册解除，手册我签过字"}),
+    dict(tag="深圳·未签合同二倍工资", city="深圳市",
+         story="我在深圳一家餐馆干了十个月，从入职起公司就一直没跟我签书面合同，上个月我不干了，月薪六千五，想要二倍工资差额",
+         story_types=["no_contract"],
+         answers={"employer_name": "深圳湘味餐饮管理有限公司", "employer_city": "深圳市", "still_employed": "no",
+                  "start_date": "2026-01-10", "end_date": "2026-11-05", "avg_wage": "6500",
+                  "contract_state": "none", "termination_by": "employee", "prior_proceeding": "none",
+                  "claims": ["double_wage"],
+                  "termination_reason": "自己干的久了没签合同，不想干了"}),
     dict(tag="北京·协商一致", city="北京市",
          story="我在北京一家广告公司干了三年，上个月公司跟我协商解除，签了协商解除协议但补偿一直拖着没给全，月薪两万五",
          story_types=["termination"],
@@ -252,6 +270,8 @@ def run_case(case):
 
 
 if __name__ == "__main__":
-    ok = all(run_case(c) for c in CASES)
+    args = sys.argv[1:]
+    picks = [c for c in CASES if not args or any(a in c["tag"] for a in args)]
+    ok = all(run_case(c) for c in (picks or CASES))
     print("\n结果:", "全部通过 ✓" if ok else "存在失败 ✗")
     sys.exit(0 if ok else 1)

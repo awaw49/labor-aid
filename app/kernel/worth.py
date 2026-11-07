@@ -67,7 +67,7 @@ def _amount_score(amount: float, money_claim: bool = False) -> tuple[int, str]:
 
 
 def compute_worth(slots: dict, gates, evidence, calc, city: dict,
-                  termination: dict | None = None) -> WorthResult:
+                  termination: dict | None = None, materials_given: bool = True) -> WorthResult:
     p = city["params"]
     types = set(slots.get("dispute_types") or [])
     amount = calc.total if calc else 0.0
@@ -78,9 +78,13 @@ def compute_worth(slots: dict, gates, evidence, calc, city: dict,
     a_score, a_note = _amount_score(amount, bool(set(slots.get("claims") or []) & money_claims))
     dims.append(Dimension("amount_cost", LABELS["amount_cost"], WEIGHTS["amount_cost"], a_score, a_note))
 
-    dims.append(Dimension("evidence", LABELS["evidence"], WEIGHTS["evidence"],
-                          evidence.score, f"证据强度 {evidence.level}（{evidence.score}/100）；"
-                          + ("有书证支撑关键事实" if evidence.score >= 70 else "关键事实仍缺口述支撑")))
+    if not materials_given:
+        dims.append(Dimension("evidence", LABELS["evidence"], WEIGHTS["evidence"], 60,
+                              "材料还没上传：结论先按你口述的事实给；照清单备齐材料，这块分会更准"))
+    else:
+        dims.append(Dimension("evidence", LABELS["evidence"], WEIGHTS["evidence"],
+                              evidence.score, f"证据强度 {evidence.level}（{evidence.score}/100）；"
+                              + ("有书证支撑关键事实" if evidence.score >= 70 else "关键事实仍缺口述支撑")))
 
     threshold = p["one_final_award_threshold"]
     one_final_types = {"unpaid_wage", "termination", "overtime", "annual_leave", "social_insurance"}
@@ -102,7 +106,8 @@ def compute_worth(slots: dict, gates, evidence, calc, city: dict,
     elif status == "normal":
         e_score, e_note = 85, "单位正常经营：裁决后执行可行性较高"
     elif not slots.get("employer_name"):
-        e_score, e_note = 45, "单位全称未确认，无法查工商存续与涉诉情况"
+        e_score, e_note = 50, ("公司全称还没从话里或材料里拿到——不影响算钱；"
+                               "立案前用「电子营业执照」小程序确认全称与存续状态即可")
     else:
         e_score, e_note = 55, "单位经营状态未确认：先在「电子营业执照」小程序查是否注销、吊销或经营异常"
     dims.append(Dimension("enforcement", LABELS["enforcement"], WEIGHTS["enforcement"], e_score, e_note))

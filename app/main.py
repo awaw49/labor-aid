@@ -4,11 +4,14 @@ from __future__ import annotations
 import base64
 import json
 import os
+from random import randint
 import re
 import time
 from datetime import date
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
+import secrets as _secrets
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -23,8 +26,99 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC = os.path.join(ROOT, "static")
 DATA = config.DATA_DIR
 
-app = FastAPI(title="劳动仲裁初步咨询助手", version=__version__)
+_INTROS = [
+    "坐吧，别急。事情从头说就行，记得多少说多少，说不清的地方咱们后头再补。我这儿不做代理，听完只帮你捋三件事：该不该去仲裁、去了带什么、到哪儿交。",
+    "慢慢说，不用组织语言，想到哪说到哪。我听完只帮你捋三件事：能不能去仲裁、要带什么材料、去哪个窗口交。",
+    "来，先坐下。把事儿从头讲讲，讲乱的没关系，我会一件件帮你问清楚。最后给你一份书面意见：能不能仲裁、带什么、去哪儿交。",
+]
 
+
+app = FastAPI(title="劳动仲裁初步咨询助手", version=__version__)
+app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+
+
+_RATE: dict[str, list[float]] = {}
+
+
+@app.middleware("http")
+async def _security_and_timing(request, call_next):
+    import time as _t
+    t0 = _t.perf_counter()
+    if request.method == "POST":
+        ip = (request.client.host if request.client else "?")
+        now = _t.time()
+        bucket = [t for t in _RATE.get(ip, []) if now - t < 60]
+        if len(bucket) >= 60:
+            from fastapi.responses import JSONResponse as _JR
+            r = _JR({"detail": {"message": "点得太快了，歇两秒再来", "retryable": True}}, status_code=429)
+            r.headers["Retry-After"] = "10"
+            return r
+        bucket.append(now)
+        _RATE[ip] = bucket
+        if len(_RATE) > 500:                      # 防内存膨胀：批量清 60 秒无活动的来源
+            inactive = [k for k, ts in _RATE.items() if not ts or now - ts[-1] > 60]
+            for k in inactive:
+                _RATE.pop(k, None)
+    resp = await call_next(request)
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Frame-Options"] = "DENY"
+    resp.headers["Referrer-Policy"] = "same-origin"
+    resp.headers["X-Process-Time-Ms"] = f"{(_t.perf_counter() - t0) * 1000:.0f}"
+    if not resp.headers.get("x-request-id"):
+        resp.headers["X-Request-ID"] = _secrets.token_hex(4)
+    return resp
+
+
+@app.middleware("http")
+async def _quiet_health_log(request, call_next):
+    if request.url.path == "/api/health":
+        import logging
+        logging.getLogger("uvicorn.access").disabled = True
+        try:
+            return await call_next(request)
+        finally:
+            logging.getLogger("uvicorn.access").disabled = False
+    return await call_next(request)
+
+
+@app.middleware("http")
+async def _cache_static(request, call_next):
+    resp = await call_next(request)
+    p = request.url.path
+    if request.method == "GET" and (p.startswith("/vendor/") or p in ("/styles.css", "/app.js", "/sw.js")
+                                    or p.endswith(".svg") or p.endswith(".webmanifest")):
+        resp.headers["Cache-Control"] = "no-cache"      # 必须能立刻拿到新版本（配合 SW 版本号）
+    if request.method == "GET" and p.startswith("/vendor/"):
+        resp.headers["Cache-Control"] = "public, max-age=604800"   # 三方库一周
+    return resp
+
+
+@app.on_event("shutdown")
+def _cleanup_bridge_on_exit():
+    """服务退出时清掉桥路文件：应答方看到空目录自然停手，不留陈旧请求。"""
+    import glob
+    for f in glob.glob(os.path.join(config.DATA_DIR, "manual_llm", "req_*.json")) + \
+             glob.glob(os.path.join(config.DATA_DIR, "manual_llm", "resp_*.txt")) + \
+             glob.glob(os.path.join(config.DATA_DIR, "manual_llm", "img_*")):
+        try:
+            os.remove(f)
+        except OSError:
+            pass
+
+
+@app.on_event("startup")
+def _cleanup_bridge():
+    """清掉上次运行遗留的桥路文件（请求方已不在，留着只会误导）。"""
+    import glob
+    from . import config
+    for f in glob.glob(os.path.join(config.DATA_DIR, "manual_llm", "req_*.json")) + \
+             glob.glob(os.path.join(config.DATA_DIR, "manual_llm", "resp_*.txt")) + \
+             glob.glob(os.path.join(config.DATA_DIR, "manual_llm", "img_*")):
+        try:
+            os.remove(f)
+        except OSError:
+            pass
 DOC_NAMES = {"termination_notice": "解除劳动合同通知书", "contract": "劳动合同/录用通知",
              "payslip": "工资条", "bank_flow": "银行流水", "chat": "聊天记录截图",
              "attendance": "考勤/排班记录", "social_record": "社保缴纳记录", "other": "材料"}
@@ -148,11 +242,20 @@ def _asked(s: store.Session, qs: list[dict]):
             s.asked[q["slot"]] = s.asked.get(q["slot"], 0) + 1
 
 
+def _questions_msg(qs: list[dict]) -> dict:
+    """一轮追问的消息体：两条同属事实小题时打 bundle 标记，前端合成一张卡一次提交。"""
+    m = {"role": "assistant", "kind": "questions", "questions": qs}
+    if len(qs) == 2 and all(q.get("kind") == "ask" for q in qs):
+        m["bundle"] = True
+    return m
+
+
 def _turn(s: store.Session, qs: list[dict], force_offer: bool = False) -> list[dict]:
     """一轮对话的收尾：有问题就继续问，没有问题就转为给意见，不能停在半空。"""
+    qs = [q for q in qs if (q.get("text") or "").strip()]      # 契约：questions 消息必须有内容
     if qs and not force_offer:
         _asked(s, qs)
-        return [{"role": "assistant", "kind": "questions", "questions": qs}]
+        return [_questions_msg(qs)]
     if force_offer or not getattr(s, "offered", False):
         return [_offer(s)]
     return [{"role": "assistant", "kind": "ack",
@@ -169,15 +272,16 @@ def _offer(s: store.Session) -> dict:
 
 def _followup_msgs(s: store.Session, qs: list[dict]) -> list[dict]:
     """追问；问无可问时由律师收尾，任何一条用户输入都要有回应。"""
+    qs = [q for q in qs if (q.get("text") or "").strip()]
     _asked(s, qs)
     if qs and not s.wrap_up:
-        return [{"role": "assistant", "kind": "questions", "questions": qs}]
+        return [_questions_msg(qs)]
     return _turn(s, [])
 
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "today": date.today().isoformat(), "city": city_store.resolve({})["city"],
+    return {"ok": True, "version": __version__, "today": date.today().isoformat(), "city": city_store.resolve({})["city"],
             "laws": len(LAWS.articles), "cases": len(CASES.cases),
             "asr_model": os.path.exists(os.path.join(ROOT, "models", f"faster-whisper-{config.ASR_MODEL}", "model.bin"))}
 
@@ -186,8 +290,7 @@ def health():
 def new_session():
     s = store.create()
     s.messages.append({"role": "assistant", "kind": "intro",
-                       "text": "坐吧，别急。事情从头说就行，记得多少说多少，说不清的地方咱们后头再补。"
-                               "我这儿不做代理，听完只帮你捋三件事：该不该去仲裁、去了带什么、到哪儿交。"})
+                       "text": _INTROS[randint(0, len(_INTROS) - 1)]})
     return {**_state(s), "messages": s.messages}
 
 
@@ -290,9 +393,18 @@ def post_text(sid: str, body: TextIn):
         msgs.append({"role": "assistant", "kind": "summary", "text": summ})
     for c in conflicts:
         meta = followup.BY_ID.get(c["slot"], {})
+
+        def _fmt(v, _slot=c["slot"]):
+            """冲突卡里的值给人看：数字去尾零加千分位，枚举走标签。"""
+            if isinstance(v, float) and v.is_integer():
+                v = int(v)
+            if isinstance(v, (int, float)):
+                return f"{v:,.0f}"
+            return _pretty_value(_slot, v)
+
         msgs.append({"role": "assistant", "kind": "conflict",
-                     "text": f"等等，这儿对不上——{meta.get('label', c['slot'])}你先前说「{c['old']}」，"
-                             f"这回说「{c['new']}」。哪个准？",
+                     "text": f"等等，这儿对不上——{meta.get('label', c['slot'])}你先前说「{_fmt(c['old'])}」，"
+                             f"这回说「{_fmt(c['new'])}」。哪个准？",
                      "slot": c["slot"]})
     if ack:
         msgs.append(ack)
@@ -301,11 +413,67 @@ def post_text(sid: str, body: TextIn):
     elif pause_only:
         msgs.append({"role": "assistant", "kind": "pause",
                      "text": "不着急，等你缓过来咱接着说，或者随时点下面的「看律师意见」。"})
+    elif conflicts:
+        pass                      # 有对不上的先裁决，裁决完下一轮自然接上追问
     else:
         msgs.extend(_followup_msgs(s, followup.semantic_from_extract(
             res, s.all_slots(), s.suspect, s.skipped, s.asked)))
     s.messages.extend(msgs)
     return {**_state(s), "messages": msgs, "extracted": res["slots"]}
+
+
+def _apply_answer(s: store.Session, slot: str, value) -> dict | None:
+    """一个答案入账：ack 写进 s.messages 并返回。
+
+    返回 help dict（未入账：说不清，带 how-to）或抛 422（日期/金额没读懂）。
+    「我还在职」芯片、在职推断这类联动也在这里做，单答/打包两条路共用。"""
+    if slot == "end_date" and value == "still_employed":
+        s.set_slot("still_employed", "yes", "user", True)
+        s.slots.pop("end_date", None)
+        s.suspect.pop("end_date", None)
+        s.conflicts = [c for c in s.conflicts if c["slot"] not in ("end_date", "still_employed")]
+        ack = {"role": "assistant", "kind": "ack", "text": "还在职，那就不算离职日。"}
+        s.messages.append(ack)
+        return ack
+    if slot in ("start_date", "end_date", "last_claim_date"):
+        v = extract.norm_date(value)
+        if not v:
+            if isinstance(value, str) and _meta_answer(value):
+                s.asked[slot] = followup.MAX_ASK_PER_SLOT
+                return {"help": followup.help_for(slot)}
+            raise HTTPException(422, "日期需要能确定年月日，例如 2026-03-15；说不清可以点「我不确定」")
+        value = v
+    elif slot in ("avg_wage", "unpaid_amount"):
+        v = extract.norm_money(value)
+        if not v:
+            if isinstance(value, str) and _meta_answer(value):
+                s.asked[slot] = followup.MAX_ASK_PER_SLOT
+                return {"help": followup.help_for(slot)}
+            raise HTTPException(422, "金额没读懂，请填数字，例如 8600；说不清可以点「我不确定」")
+        value = v
+    if slot in ("dispute_types", "claims"):
+        value = value if isinstance(value, list) else [value]
+    s.set_slot(slot, value, "user", True)
+    if slot == "still_employed" and value == "yes":
+        s.slots.pop("end_date", None)
+    if slot == "end_date" and not s.slots.get("still_employed"):
+        # 只有离职日已经过去才推断"已离职"；未来日期=被通知还没走，在职状态照常问
+        if value <= date.today().isoformat():
+            s.set_slot("still_employed", "no", "inferred", True)
+    s.suspect.pop(slot, None)
+    s.conflicts = [c for c in s.conflicts if c["slot"] != slot]
+    val_txt = _pretty_value(slot, value)
+    ack = {"role": "assistant", "kind": "ack", "text": _ack(slot, val_txt)}
+    if slot == "employer_city" and val_txt not in ("杭州市", "北京市", "上海市", "广州市", "深圳市"):
+        ack["text"] = (f"{val_txt}——这个城市的金额线我这边没备料，不瞎猜；"
+                       "意见里受案范围、时效照常给，金额你会看到「按当地口径确认」。")
+    s.messages.append(ack)
+    return ack
+
+
+def _next_round(s: store.Session) -> list[dict]:
+    """点选/填空后的下一轮：走模板计划轮，零 LLM 等待——语义理解只发生在用户自由说话时。"""
+    return _turn(s, followup.next_questions(s.all_slots(), s.suspect, s.skipped, s.asked))
 
 
 @app.post("/api/session/{sid}/answer")
@@ -315,62 +483,64 @@ def answer(sid: str, body: AnswerIn):
         raise HTTPException(404, "session not found")
     slot, value = body.slot, body.value
 
+    if value == "__unsure__":
+        s.asked[slot] = followup.MAX_ASK_PER_SLOT   # 说不清的不反复问
+        return {"help": followup.help_for(slot), **_state(s)}
+
     if value == "__skip__":
         s.skipped.add(slot)
         ack = {"role": "assistant", "kind": "ack",
                "text": "行，这个就不填了。结论里我写清楚这块没问到、按保守的算——想起来随时补。"}
         s.messages.append(ack)
-        msgs = [ack] + _turn(s, followup.generate(s.text(), s.all_slots(), s.suspect, s.skipped, s.asked))
+        msgs = [ack] + _next_round(s)
         s.messages.extend(msgs[1:])
         return {**_state(s), "messages": msgs}
 
-    if value == "__unsure__":
-        s.asked[slot] = followup.MAX_ASK_PER_SLOT   # 说不清的不反复问
-        return {"help": followup.help_for(slot), **_state(s)}
-
-    if slot == "end_date" and value == "still_employed":
-        s.set_slot("still_employed", "yes", "user", True)
-        s.slots.pop("end_date", None)
-        s.suspect.pop("end_date", None)
-        qs = followup.next_questions(s.all_slots(), s.suspect, s.skipped, s.asked)
-        ack_onjob = {"role": "assistant", "kind": "ack", "text": "还在职，那就不算离职日。"}
-        msgs = [ack_onjob] + _turn(s, qs)
-        s.messages.extend(msgs[1:])
-        return {**_state(s), "messages": msgs}
-    if slot in ("start_date", "end_date", "last_claim_date"):
-        v = extract.norm_date(value)
-        if not v:
-            if isinstance(value, str) and _meta_answer(value):
-                s.asked[slot] = followup.MAX_ASK_PER_SLOT
-                return {"help": followup.help_for(slot), **_state(s)}
-            raise HTTPException(422, "日期需要能确定年月日，例如 2026-03-15；说不清可以点「我不确定」")
-        value = v
-    if slot in ("avg_wage", "unpaid_amount"):
-        v = extract.norm_money(value)
-        if not v:
-            if isinstance(value, str) and _meta_answer(value):
-                s.asked[slot] = followup.MAX_ASK_PER_SLOT
-                return {"help": followup.help_for(slot), **_state(s)}
-            raise HTTPException(422, "金额没读懂，请填数字，例如 8600；说不清可以点「我不确定」")
-        value = v
-    if slot in ("dispute_types", "claims"):
-        value = value if isinstance(value, list) else [value]
-    if slot == "end_date" and value == "still_employed":
-        s.set_slot("still_employed", "yes", "user", True)
-        slot, value = "still_employed", "yes"
-
-    s.set_slot(slot, value, "user", True)
-    if slot == "still_employed" and value == "yes":
-        s.slots.pop("end_date", None)
-    s.suspect.pop(slot, None)
-    s.conflicts = [c for c in s.conflicts if c["slot"] != slot]
-    val_txt = _pretty_value(slot, value)
-    ack = {"role": "assistant", "kind": "ack", "text": _ack(slot, val_txt)}
-    s.messages.append(ack)
-    qs = followup.generate(s.text(), s.all_slots(), s.suspect, s.skipped, s.asked)
-    msgs = [ack] + _turn(s, qs)
+    out = _apply_answer(s, slot, value)
+    if out is None or "help" in out:
+        return {**(out or {}), **_state(s)}
+    msgs = [out] + _next_round(s)
     s.messages.extend(msgs[1:])
     return {**_state(s), "messages": msgs}
+
+
+class BatchIn(BaseModel):
+    answers: list[AnswerIn]
+
+
+@app.post("/api/session/{sid}/answer_batch")
+def answer_batch(sid: str, body: BatchIn):
+    """打包卡一次提交：逐条入账，只起一轮追问——两件事并一次点击。"""
+    s = store.get(sid)
+    if not s:
+        raise HTTPException(404, "session not found")
+    if not body.answers:
+        raise HTTPException(422, "没有要提交的答案")
+    acks: list[dict] = []
+    helped: list[dict] = []
+    for item in body.answers:
+        if item.value == "__skip__":
+            s.skipped.add(item.slot)
+            name = followup.BY_ID.get(item.slot, {}).get("label", "这项")
+            acks.append({"role": "assistant", "kind": "ack",
+                         "text": f"行，{name}先不填，结论里按保守的算——想起来随时补。"})
+            s.messages.append(acks[-1])
+            continue
+        if item.value == "__unsure__":
+            s.asked[item.slot] = followup.MAX_ASK_PER_SLOT
+            helped.append(followup.help_for(item.slot))
+            continue
+        out = _apply_answer(s, item.slot, item.value)
+        if out and "help" not in out:
+            acks.append(out)
+        elif out:
+            helped.append(out["help"])
+    msgs = acks + _next_round(s)
+    s.messages.extend(msgs[len(acks):])
+    resp = {**_state(s), "messages": msgs}
+    if helped:
+        resp["help"] = helped[0]
+    return resp
 
 
 @app.post("/api/session/{sid}/image")
@@ -381,6 +551,8 @@ async def upload_image(sid: str, file: UploadFile = File(...)):
     raw = await file.read()
     if len(raw) > config.MAX_UPLOAD_BYTES:
         raise HTTPException(413, "图片过大（>12MB）")
+    if file.content_type and not file.content_type.startswith("image/"):
+        raise HTTPException(415, "只收图片（jpg/png/webp 等），这不是图片文件")
     mime = file.content_type or "image/jpeg"
     b64 = base64.b64encode(raw).decode()
 
@@ -420,7 +592,7 @@ async def upload_image(sid: str, file: UploadFile = File(...)):
         meta = followup.BY_ID.get(c["slot"], {})
         msgs.append({"role": "assistant", "kind": "conflict", "slot": c["slot"],
                      "text": f"这上头写的是「{c['new']}」，可你先前跟我说的是「{c['old']}」——{meta.get('label', c['slot'])}到底哪个对？"})
-    qs = followup.generate(s.text(), s.all_slots(), s.suspect, s.skipped, s.asked)
+    qs = followup.next_questions(s.all_slots(), s.suspect, s.skipped, s.asked)
     msgs.extend(_turn(s, qs))
     s.messages.extend(msgs)
     return {**_state(s), "messages": msgs, "doc_type": doc_type,
@@ -447,8 +619,30 @@ def confirm(sid: str, body: ConfirmIn):
         if body.slot not in s.suspect:
             raise HTTPException(422, "该槽位没有待确认的图片读数")
         s.confirm(body.slot)
-    qs = followup.generate(s.text(), s.all_slots(), s.suspect, s.skipped, s.asked)
+    qs = followup.next_questions(s.all_slots(), s.suspect, s.skipped, s.asked)
+    qs = [q for q in qs if (q.get("text") or "").strip()]
     return {**_state(s), "messages": [{"role": "assistant", "kind": "questions", "questions": qs}] if qs else []}
+
+
+@app.post("/api/session/{sid}/confirm_all")
+def confirm_all(sid: str):
+    """材料读数一键确认：全部按图片值入账（用户点了「都对，就这些」）。"""
+    s = store.get(sid)
+    if not s:
+        raise HTTPException(404, "session not found")
+    if not s.suspect:
+        raise HTTPException(409, {"message": "没有待确认的读数"})
+    confirmed = []
+    for slot, item in list(s.suspect.items()):
+        v = s.confirm(slot)
+        confirmed.append(f"{followup.BY_ID.get(slot, {}).get('label', slot)} {v}")
+    s.messages.append({"role": "assistant", "kind": "ack",
+                       "text": f"行，{len(confirmed)} 项都按材料上的记：" + "、".join(confirmed) + "。"})
+    qs = followup.next_questions(s.all_slots(), s.suspect, s.skipped, s.asked)
+    msgs = s.messages[-1:] + _turn(s, qs)
+    s.messages.extend(msgs[1:])
+    confirmed_slots = [k for k, c in s.slots.items() if c.get("source") == "image_confirmed"]
+    return {**_state(s), "messages": msgs, "confirmed": confirmed_slots}
 
 
 @app.post("/api/session/{sid}/asr")
@@ -463,6 +657,8 @@ async def asr_upload(sid: str, file: UploadFile = File(...)):
         res = asr.transcribe(raw, suffix=".webm")
     except asr.ASRError as e:
         raise HTTPException(503, str(e))
+    if not (res.get("text") or "").strip():
+        raise HTTPException(422, "没听清内容——周围太吵或者说话太短了，再试一次")
     del raw
     return {"transcript": res["text"], "segments": res["segments"], "duration": res["duration"],
             "notice": "录音只用于本次转写，转写完成即从服务端删除。"}
@@ -493,6 +689,7 @@ def make_report(sid: str):
     if rep is None:
         raise HTTPException(503, {"message": "模型服务这会儿不稳定，稍等几秒再点一次", "retryable": True,
                                   "detail": str(last_err)[:100]})
+    rep["facts_snapshot"] = s.confirmed_slots()
     s.last_report = rep
     return rep
 
@@ -564,6 +761,9 @@ def reset_settings():
 
 @app.post("/api/settings/test")
 def test_settings(body: ProbeIn):
+    if settings_store.load().get("mode") == "manual":
+        return {"models_status": 0, "bridge_mode": True,
+                "note": "当前是演示桥路模式——不走远端 API。切到 api 模式后再测连接。"}
     cfg = settings_store.load()
     if cfg.get("mode") == "manual":
         return {"ok": True, "base_url": "manual", "model": "human-in-session",
@@ -579,6 +779,32 @@ def test_settings(body: ProbeIn):
 def slots_meta():
     return {"slots": SLOTS, "city": city_store.resolve({})["city"],
             "covered_cities": list(city_store.FILES)}
+
+
+@app.get("/api/session/{sid}/export")
+def export_session(sid: str):
+    """脱敏导出：结构化案情 + 最近报告，不含图片与音频（它们从不落盘）。"""
+    s = store.get(sid)
+    if not s:
+        raise HTTPException(404, "session not found")
+    return {"exported_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "note": "演示数据，仅含本案结构化信息",
+            "session": {"slots": s.confirmed_slots(), "materials": s.materials,
+                        "created": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(s.created))},
+            "report": s.last_report}
+
+
+@app.get("/api/bridge/status")
+def bridge_status():
+    """manual 模式诊断：当前积压的桥路请求数（应答方是否跟上）。"""
+    import glob
+    reqs = glob.glob(os.path.join(config.DATA_DIR, "manual_llm", "req_*.json"))
+    pending = len(reqs)
+    oldest = min((os.path.getmtime(f) for f in reqs), default=None)
+    waiting = int(time.time() - oldest) if oldest else 0
+    return {"mode": settings_store.load().get("mode"), "pending": pending,
+            "oldest_wait_s": waiting,
+            "responder_online": pending == 0 or waiting < 90}
 
 
 @app.get("/api/city")
@@ -607,12 +833,29 @@ def one_article(citation_id: str):
     a = LAWS.get(citation_id)
     if not a:
         raise HTTPException(404, "article not found")
-    return {k: v for k, v in a.items() if k != "tokens"}
+    law = LAWS.laws.get(a.get("law_id") or citation_id.partition(":")[0], {})
+    return {**{k: v for k, v in a.items() if k != "tokens"},
+            "total": len(law.get("articles", []))}
 
 
 @app.get("/api/search")
 def search(q: str, limit: int = 8):
+    limit = max(1, min(limit, 30))          # 上限防滥用
     return {"results": LAWS.search(q, limit)}
+
+
+@app.get("/{full_path:path}")
+def spa_fallback(full_path: str):
+    """未知前端路径回首页；真实静态文件照常吐文件，/api 未知路径保持 404。"""
+    from fastapi.responses import FileResponse as _FR
+    if full_path.startswith("api/"):
+        raise HTTPException(404, "not found")
+    candidate = os.path.join(STATIC, full_path)
+    if os.path.isfile(candidate):
+        return _FR(candidate)                     # 真实静态文件（styles.css/app.js/图标…）
+    if "." in full_path.rsplit("/", 1)[-1]:
+        raise HTTPException(404, "not found")     # 带扩展名的路径不存在就是 404，别回首页
+    return _FR(os.path.join(STATIC, "index.html"))
 
 
 app.mount("/", StaticFiles(directory=STATIC, html=True), name="static")

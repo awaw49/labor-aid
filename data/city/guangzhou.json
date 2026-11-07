@@ -15,7 +15,8 @@
   "si_base_max": 27549,
   "one_final_award_threshold": 32160,
   "one_final_award_note": "一裁终局金额线 = 当地月最低工资标准 × 12 = 2680 × 12 = 32160 元（《劳动争议调解仲裁法》第四十七条第一项）。",
-  "annual_leave_base_days": 5
+  "annual_leave_base_days": 5,
+  "si_avg_wage_monthly": 9183
  },
  "arbitration": [
   {
@@ -65,9 +66,21 @@
   "how": "拨打 12348，或到所在区法律援助处申请；追索劳动报酬可申请免费法律援助（经济困难标准以当地规定为准）。"
  },
  "hotlines": [
-  {"label": "人社服务热线", "tel": "12333"},
-  {"label": "法律援助", "tel": "12348"},
-  {"label": "法院诉讼服务", "tel": "12368"},
-  {"label": "公积金", "tel": "12329"}
+  {
+   "label": "人社服务热线",
+   "tel": "12333"
+  },
+  {
+   "label": "法律援助",
+   "tel": "12348"
+  },
+  {
+   "label": "法院诉讼服务",
+   "tel": "12368"
+  },
+  {
+   "label": "公积金",
+   "tel": "12329"
+  }
  ]
 }

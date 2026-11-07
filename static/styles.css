@@ -30,7 +30,7 @@ a{color:var(--brand);text-decoration:none}
 .topbar{
   position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:8px;
   padding:calc(10px + env(safe-area-inset-top)) 12px 10px;
-  background:rgba(246,245,241,.86);backdrop-filter:saturate(180%) blur(16px);
+  background:color-mix(in srgb, var(--bg) 88%, transparent);backdrop-filter:saturate(180%) blur(16px);
   border-bottom:1px solid transparent;transition:border-color .2s;
 }
 .topbar.scrolled{border-bottom-color:var(--line)}
@@ -106,10 +106,14 @@ a{color:var(--brand);text-decoration:none}
 /* 问题卡 */
 .qcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-1)}
 .qcard + .qcard{margin-top:10px}
+/* 打包卡：两件小事一张卡 */
+.b-sec{padding-bottom:14px;margin-bottom:14px;border-bottom:1px dashed var(--line)}
+.b-sec:last-of-type{border-bottom:0;margin-bottom:0}
+.b-submit{width:100%;margin-top:14px}
 .q-title{font-weight:600;font-size:.96em;line-height:1.5}
 .q-why{color:var(--ink-3);font-size:.8em;margin-top:4px}
 .q-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.chip{border:1px solid var(--line-strong);background:var(--surface-2);border-radius:999px;padding:8px 14px;font-size:.88em;color:var(--ink);transition:background .15s,border-color .15s,color .15s}
+.chip{min-height:44px;border:1px solid var(--line-strong);background:var(--surface-2);border-radius:999px;padding:8px 14px;font-size:.88em;color:var(--ink);transition:background .15s,border-color .15s,color .15s}
 .chip:active{background:var(--brand-soft)}
 .chip.selected{background:var(--brand);border-color:var(--brand);color:#fff}
 .chip.subtle{border-style:dashed;color:var(--ink-2);background:transparent}
@@ -220,14 +224,12 @@ a{color:var(--brand);text-decoration:none}
 .case-p{font-size:.82em;color:var(--ink-2);margin-top:6px}
 .case-p b{color:var(--ink-3);font-weight:550}
 
-.notice{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);padding:14px;font-size:.78em;color:var(--ink-2);line-height:1.65;margin-top:22px}
-.notice a{color:var(--brand)}
 .report-actions{
-  position:sticky;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
-  padding:10px 16px calc(10px + var(--safe-b));background:rgba(246,245,241,.95);
+  position:sticky;bottom:0;display:grid;grid-template-columns:repeat(2,1fr);gap:8px;
+  padding:10px 16px calc(10px + var(--safe-b));background:color-mix(in srgb, var(--bg) 92%, transparent);
   backdrop-filter:blur(16px);border-top:1px solid var(--line);
 }
-.report-actions .btn{padding:10px 6px;font-size:.8em;flex-direction:column;gap:3px}
+.report-actions .btn{padding:12px 6px;font-size:.9em;flex-direction:column;gap:3px}
 
 /* ---------- 法条库 ---------- */
 .search-wrap{position:sticky;top:0;padding:8px 16px 10px;background:var(--bg);z-index:5}
@@ -247,6 +249,11 @@ a{color:var(--brand);text-decoration:none}
 /* ---------- 设置 ---------- */
 #view-settings{padding-bottom:calc(32px + var(--safe-b))}
 .settings-group{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin:14px 16px 0;overflow:hidden}
+details.adv{border-top:1px solid var(--line)}
+details.adv>summary{cursor:pointer;list-style:none;padding:14px 16px;font-weight:600;font-size:.9em;color:var(--ink-2,#4A5550);display:flex;align-items:center;gap:8px}
+details.adv>summary::-webkit-details-marker{display:none}
+details.adv>summary::after{content:"›";margin-left:auto;font-size:1.1em;color:var(--ink-3,#8A968F);transition:transform .15s}
+details.adv[open]>summary::after{transform:rotate(90deg)}
 .settings-title{font-size:.76em;color:var(--ink-3);letter-spacing:.06em;margin:18px 20px 6px;font-weight:600}
 .settings-group .settings-title{margin:16px 16px 8px}
 .field{padding:0 16px 12px}
@@ -332,3 +339,65 @@ a{color:var(--brand);text-decoration:none}
   .report-body{padding:0}
   .card,.report-hero{break-inside:avoid;box-shadow:none}
 }
+
+/* 键盘操作可见性 */
+button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible, textarea:focus-visible{
+  outline:2px solid var(--brand,#2F5D50); outline-offset:2px; border-radius:6px;
+}
+
+/* 维度条 */
+.dims{margin-top:12px;display:grid;gap:10px}
+.dim{background:#fff;border:1px solid var(--brand-soft,#E7EFE9);border-radius:10px;padding:8px 10px}
+.dim-top{display:flex;justify-content:space-between;font-size:.82rem;color:var(--ink-2,#51605A)}
+.dim-bar{height:6px;background:var(--brand-soft,#E7EFE9);border-radius:3px;overflow:hidden;margin:5px 0 4px}
+.dim-bar i{display:block;height:100%;background:var(--brand,#2F5D50);border-radius:3px}
+.dim-note{font-size:.78rem;color:var(--ink-3,#8A968F);line-height:1.5}
+/* 法条组吸顶 */
+.law-group-title{position:sticky;top:0;background:#F6F5F1;z-index:2}
+
+/* 大写金额 */
+.m-rmb{font-size:.78rem;color:var(--ink-3,#8A968F);margin-top:4px;letter-spacing:.5px}
+/* 打印页眉：仅打印可见 */
+.print-head{font-size:.82rem;color:#444;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #ddd}
+@media print{.print-head{display:block!important}.case summary{list-style:none}}
+@media print{.case *{display:block!important}.case .case-p{display:block!important}}
+
+/* ---------- 深色模式 ---------- */
+:root[data-theme="dark"]{
+  --brand:#4EA291; --brand-ink:#7FC0B2; --brand-soft:#1B332D; --brand-line:#2C4A42;
+  --bg:#101614; --surface:#182019; --surface-2:#1C2620;
+  --ink:#E8ECEA; --ink-2:#AAB6B1; --ink-3:#79857F; --ink-4:#54605A;
+  --line:#2A332E; --line-strong:#39443E;
+  --ok:#4EA291; --warn:#D89B4A; --warn-bg:#3A2E1B; --bad:#D27065; --bad-bg:#3B2320;
+  --shadow-1:0 1px 2px rgba(0,0,0,.4);
+  --shadow-2:0 2px 8px rgba(0,0,0,.45), 0 12px 28px rgba(0,0,0,.4);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]):not([data-theme="dark"]){
+    --brand:#4EA291; --brand-ink:#7FC0B2; --brand-soft:#1B332D; --brand-line:#2C4A42;
+    --bg:#101614; --surface:#182019; --surface-2:#1C2620;
+    --ink:#E8ECEA; --ink-2:#AAB6B1; --ink-3:#79857F; --ink-4:#54605A;
+    --line:#2A332E; --line-strong:#39443E;
+    --ok:#4EA291; --warn:#D89B4A; --warn-bg:#3A2E1B; --bad:#D27065; --bad-bg:#3B2320;
+    --shadow-1:0 1px 2px rgba(0,0,0,.4);
+    --shadow-2:0 2px 8px rgba(0,0,0,.45), 0 12px 28px rgba(0,0,0,.4);
+  }
+}
+/* 动效降级 */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+
+/* 材料读取原话样式 */
+.quote-bubble{border-left:3px solid var(--brand-line);font-size:.97em}
+
+/* 用户发送材料缩略图 */
+.bubble .thumb{display:block;max-width:180px;max-height:120px;border-radius:8px;margin-top:8px;border:1px solid var(--line)}
+
+/* 报告骨架屏 */
+.skel{height:18px;border-radius:9px;background:linear-gradient(90deg,var(--brand-soft),var(--line),var(--brand-soft));background-size:200% 100%;animation:skel 1.2s infinite;margin:10px 0}
+@keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* 设置页工具按钮纵向排列 */
+#themeRow{flex-direction:column;align-items:flex-start;gap:4px}
+#themeRow .link-btn{display:block;text-align:left}

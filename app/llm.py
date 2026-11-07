@@ -7,6 +7,7 @@ mode = "manual"：会话内人工应答——把完整请求写到 data/manual_l
 from __future__ import annotations
 
 import base64
+import os
 import json
 import re
 import time
@@ -36,6 +37,10 @@ def _strip_json(text: str) -> str:
 def _manual_exchange(messages: list[dict], *, model: str, max_tokens: int, json_mode: bool) -> str:
     root = Path(settings_store.ROOT) / "data" / "manual_llm"
     root.mkdir(parents=True, exist_ok=True)
+    import glob as _g
+    backlog = len(_g.glob(str(root / "req_*.json")))
+    if backlog >= 5:
+        raise LLMError(f"桥路积压 {backlog} 条——应答方不在线，先恢复应答方")
     rid = time.strftime("%H%M%S") + "-" + uuid.uuid4().hex[:4]
     clean, imgs = [], []
     for m in messages:
@@ -60,14 +65,20 @@ def _manual_exchange(messages: list[dict], *, model: str, max_tokens: int, json_
     req.write_text(json.dumps({"model": model, "max_tokens": max_tokens,
                                "json_mode": json_mode, "messages": clean},
                               ensure_ascii=False, indent=1), encoding="utf-8")
+    try:
+        os.chmod(req, 0o600)          # 桥路文件含案情，仅本用户可读
+    except OSError:
+        pass
     resp = root / f"resp_{rid}.txt"
     limit = float(settings_store.load().get("manual_timeout", 600))
     deadline = time.time() + limit
     while time.time() < deadline:
         if resp.exists():
-            out = resp.read_text(encoding="utf-8").strip()
+            out = resp.read_text(encoding="utf-8-sig").strip()   # utf-8-sig 顺带吃掉 BOM
             for p in imgs:
                 p.unlink(missing_ok=True)      # 隐私：图片看完即删，不落盘
+            req.unlink(missing_ok=True)        # 桥路用完即清，不留陈旧请求
+            resp.unlink(missing_ok=True)
             return out
         time.sleep(0.5)
     raise LLMError(f"会话内人工应答超时（等 resp_{rid}.txt 超过 {limit:.0f} 秒）")

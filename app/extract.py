@@ -39,6 +39,11 @@ def norm_date(v):
     if m:
         y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
         if 1 <= mo <= 12 and 1 <= d <= 31:
+            import datetime
+            try:
+                datetime.date(y, mo, d)          # 2月30日这类假日期当场拦下
+            except ValueError:
+                return None
             return f"{y:04d}-{mo:02d}-{d:02d}"
     m = re.search(r"(\d{1,2})\s*月\s*(\d{1,2})", s)
     if m:
@@ -117,6 +122,8 @@ EXTRACT_SYSTEM = """你是劳动仲裁初步咨询系统的"事实抽取器"，�
    一个字都没听出新东西，summary 留空，别硬复述；纯安抚/跑题回应不确认（确认由系统按是否有新事实自动决定）。
 8. 来访者提到拉横幅、堵门、堵领导、武力讨薪、威胁网络曝光等过激做法时：summary 先接住他的气话，
    再温和劝一句（横幅堵门解决不了问题还容易把自己搭进去），把话头引回合法稳妥的渠道；不评判、不说教、不吓唬。
+9. 发现前后矛盾（conflicts 非空）时，summary 只说"你这次的说法和之前对不上，我们确认一下"，
+   不替来访者选边、不说"按新数算"，确认交给系统的"哪个准"卡片。
 
 槽位与取值：
 - employer_name: 公司全称（字符串）
@@ -141,6 +148,8 @@ EXTRACT_SYSTEM = """你是劳动仲裁初步咨询系统的"事实抽取器"，�
  "conflicts": [{"slot": "...", "a": "...", "b": "..."}],
  "summary": "一两句大白话，把你听懂的事说回给来访者听（不含任何法律判断）",
  "followup": {"slot": "...", "text": "...", "why": "..."},
+   （followup 也可以是数组 [{"slot":"...","text":"..."},{"slot":"...","text":"..."}]，最多两条，
+    且只用于同一件事的两小步；一般情况就给一个对象）
  "meta": {"signal": "none", "about_slot": ""}}
 没有把握的槽位直接不要出现在 slots 里。
 

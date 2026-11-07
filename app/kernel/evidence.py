@@ -106,7 +106,7 @@ def score_evidence(materials: list[dict], slots: dict) -> EvidenceResult:
     if "annual_leave" in types and "attendance" not in have:
         gaps.append("年休假缺请假/考勤记录：先导出 OA 或考勤系统的年假余额")
     if "social_insurance" in types and "social_record" not in have:
-        gaps.append("社保争议缺参保缴费记录：浙里办可查并截图")
+        gaps.append("社保争议缺参保缴费记录：「电子社保卡」小程序可查并截图")
     for t in sorted(have):
         if t in MATERIAL_TYPES:
             strong.append(MATERIAL_TYPES[t][0])

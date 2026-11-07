@@ -24,11 +24,69 @@ DISCLAIMER = ("本意见依据你确认的事实与你上传的材料生成，�
               "需要人工帮助，可拨打 12348 法律援助热线。")
 
 
+def rmb_upper(n: float) -> str:
+    """人民币大写：报告正式场合用。"""
+    digits = "零壹贰叁肆伍陆柒捌玖"
+    units = ["", "拾", "佰", "仟"]
+    bigs = ["", "万", "亿", "万亿"]
+    n = int(round(n))
+    if n == 0:
+        return "零元整"
+    segs = []
+    while n > 0:
+        segs.append(n % 10000)
+        n //= 10000
+    out, zero_pending = [], False
+    for i in range(len(segs) - 1, -1, -1):
+        seg = segs[i]
+        if seg == 0:
+            zero_pending = bool(out)
+            continue
+        s = ""
+        zero = False
+        for pos in range(3, -1, -1):
+            d = (seg // 10 ** pos) % 10
+            if d:
+                if zero:
+                    s += "零"
+                s += digits[d] + units[pos]
+                zero = False
+            else:
+                zero = bool(s)
+        if out and (zero_pending or seg < 1000):
+            s = "零" + s
+        zero_pending = False
+        out.append(s + bigs[i])
+    return "".join(out) + "元整"
+
+
+CLAIMS_BY_TYPE = {
+    "termination": ("compensation_2n", "compensation_n"),
+    "no_contract": ("double_wage",),
+    "unpaid_wage": ("wage",),
+    "overtime": ("wage",),
+    "annual_leave": ("annual_leave_pay",),
+}
+
+
+def derive_claims(types: set[str]) -> list[str]:
+    """诉求从争议类型直接推导，不再单独问用户一轮（最终请求仍由用户在报告里自己取舍）。"""
+    out: list[str] = []
+    for t, claims in CLAIMS_BY_TYPE.items():
+        if t in types:
+            out.extend(claims)
+    return sorted(set(out))
+
+
 def build_report(session, today: date | None = None, missing_facts: list[str] | None = None,
                  needs: dict | None = None, open_questions: list[dict] | None = None) -> dict:
     today = today or date.today()
-    slots = session.confirmed_slots()
+    slots = dict(session.confirmed_slots())
     types = set(slots.get("dispute_types") or [])
+    if not slots.get("claims"):
+        derived = derive_claims(types)
+        if derived:
+            slots["claims"] = derived
     missing_facts = missing_facts or []
     open_questions = open_questions or []
 
@@ -37,7 +95,8 @@ def build_report(session, today: date | None = None, missing_facts: list[str] | 
     gates = run_gates(slots, CITY, needs, today)
     evidence = score_evidence(session.materials, slots)
     calc = calc_all(slots, CITY, today, termination=needs["termination"])
-    worth = compute_worth(slots, gates, evidence, calc, CITY, termination=needs["termination"])
+    worth = compute_worth(slots, gates, evidence, calc, CITY, termination=needs["termination"],
+                          materials_given=bool(getattr(session, "materials", [])))
 
     if not gates.can_arbitrate:
         decision = "cannot"
@@ -69,8 +128,12 @@ def build_report(session, today: date | None = None, missing_facts: list[str] | 
 
     confidence = _confidence(session)
 
+
+    rmb = rmb_upper(calc.total) if calc.total else ""
+
     return {
         "generated_at": today.isoformat(),
+        "claim_amount_rmb": rmb,
         "city": CITY["city"], "caliber": CITY["caliber"], "verified_at": CITY["verified_at"],
         "conclusion": {
             "decision": decision,
@@ -118,9 +181,6 @@ def _one_liner(worth, gates, calc, city, evidence=None, still_employed=None) -> 
                 f"能主张的金额大约 {calc.total:,.0f} 元，" + tail)
     if worth.decision == "better_alternative" and worth.alternative:
         return f"可以仲裁，但先走「{worth.alternative['title']}」更快。" + tail
-    if evidence is not None and evidence.score < 50:
-        return (f"现在别急着去，你手上的材料太薄（证据强度 {evidence.score}/100），"
-                f"先把下面清单里那几样补齐，再来申请。" + tail)
     return "按现在这些事实，仲裁不太划算，先补证据或者走别的路。" + tail
 
 

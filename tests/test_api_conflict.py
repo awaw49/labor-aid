@@ -109,7 +109,7 @@ def test_turn_never_leaves_dialog_hanging():
 def test_answer_with_no_more_questions_offers_opinion(monkeypatch):
     from app import followup as followup_mod
     sid = client.post("/api/session").json()["session_id"]
-    monkeypatch.setattr(followup_mod, "generate", lambda *a, **k: [])
+    monkeypatch.setattr(followup_mod, "next_questions", lambda *a, **k: [])
     r = client.post(f"/api/session/{sid}/answer", json={"slot": "employer_city", "value": "杭州市"}).json()
     kinds = [m["kind"] for m in r["messages"]]
     assert "offer" in kinds

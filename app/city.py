@@ -37,7 +37,15 @@ def _load(name: str) -> dict:
 
 def normalize(value: str | None) -> str:
     v = str(value or "").strip()
-    return ALIASES.get(v, v)
+    if v in ALIASES:
+        return ALIASES[v]
+    if v in FILES:
+        return v
+    # 「杭州市西湖区」这类带区县的写法归到地级市口径
+    for name in FILES:
+        if v.startswith(name[:2]) and name[:2] in v:
+            return name
+    return v
 
 
 def resolve(slots: dict) -> dict:

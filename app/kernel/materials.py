@@ -12,7 +12,7 @@ BASE = [
      "required": True, "material_type": "company_registry"},
     {"key": "relation", "name": "劳动关系证明（合同/工资流水/社保记录/考勤/工牌/工作群）",
      "purpose": "证明“我在这家公司上过班”", "burden": "申请人初步举证",
-     "how": "银行 App 导出工资流水、浙里办查社保缴纳记录、企业微信导出工作群记录",
+     "how": "银行 App 导出工资流水、「电子社保卡」小程序查社保缴纳记录、企业微信导出工作群记录",
      "required": True, "material_type": "contract"},
 ]
 
@@ -55,7 +55,7 @@ BY_TYPE = {
     "social_insurance": [
         {"key": "si_record", "name": "社保缴纳记录 / 断缴截图",
          "purpose": "未缴、断缴事实与损失金额", "burden": "申请人；缴费记录在社保经办机构",
-         "how": "浙里办 → 社保查询 → 参保缴费明细；或社保经办窗口打印",
+         "how": "「电子社保卡」小程序 → 参保缴费信息查询；或社保经办窗口打印",
          "required": True, "material_type": "social_record"},
     ],
     "noncompete": [

@@ -2,12 +2,14 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+    <link rel="apple-touch-icon" href="/icon.svg">
 <meta name="theme-color" content="#0E5C4B">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101614">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="description" content="劳动仲裁初步咨询：先弄清楚该不该去、带什么材料、去哪儿提交。">
-<title>劳动仲裁初步咨询 · 杭州</title>
+<title>劳动仲裁初步咨询 · 北上广深杭</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/styles.css">
@@ -44,6 +46,7 @@
   </header>
 
   <!-- 首页 -->
+  <div id="healthBanner" class="evidence-hint" style="display:none;margin:0 14px;border-radius:10px">服务还没连上——确认后端已启动（uvicorn app.main:app --port 8787），然后刷新页面。</div>
   <main id="view-home" class="view active">
     <section class="hero">
       <div class="brand">
@@ -89,6 +92,7 @@
       <div class="faq" id="faqList">
         <details><summary>会帮我打官司吗？</summary><p>不会。这里只做咨询，不代理案件。需要代理时，会建议你联系法律援助或律师。</p></details>
         <details><summary>结论能保证准确吗？</summary><p>结论由规则计算，法条来自官方法规库，可以逐条点开核对。但它依赖你确认的事实，事实有出入结论就会变，最终以仲裁委认定为准。</p></details>
+        <details><summary>我不在这五座城市怎么办？</summary><p>金额口径目前覆盖北京、上海、广州、深圳、杭州五城；其他城市的用户照样能聊——受案范围、时效、解除合法性按国家法律全国通用，报告会明确告知覆盖范围并指路当地仲裁委。</p></details>
       </div>
     </section>
 
@@ -103,17 +107,15 @@
 
   <!-- 对话 -->
   <main id="view-chat" class="view">
-    <div id="chatList" class="chat-list"></div>
+    <div id="chatList" class="chat-list" aria-live="polite"></div>
   </main>
 
   <!-- 律师意见 -->
   <main id="view-report" class="view">
     <div id="reportBody" class="report-body"></div>
     <div class="report-actions">
-      <button id="exportPdf" class="btn btn-ghost"><svg class="ic-sm"><use href="#i-doc"/></svg>PDF</button>
-      <button id="exportImg" class="btn btn-ghost"><svg class="ic-sm"><use href="#i-image"/></svg>长图</button>
-      <button id="speakBtn" class="btn btn-ghost"><svg class="ic-sm"><use href="#i-mic"/></svg>朗读</button>
       <button id="rebutBtn" class="btn btn-ghost">抗辩预演</button>
+      <button id="backToChat" class="btn btn-ghost"><svg class="ic-sm"><use href="#i-back"/></svg>回去补充</button>
     </div>
   </main>
 
@@ -128,30 +130,34 @@
   <!-- 设置 -->
   <main id="view-settings" class="view">
     <section class="settings-group">
-      <h2 class="settings-title">模型服务</h2>
-      <div class="field">
-        <label for="setBase">服务地址</label>
-        <input id="setBase" type="url" autocomplete="off" spellcheck="false">
-      </div>
-      <div class="field">
-        <label for="setKey">访问密钥</label>
-        <input id="setKey" type="password" autocomplete="off" spellcheck="false" placeholder="已设置，留空则不修改">
-      </div>
-      <div class="field-row">
+      <details class="adv">
+        <summary>高级 · 模型服务与桥路</summary>
         <div class="field">
-          <label for="setTextModel">文本模型</label>
-          <input id="setTextModel" type="text" autocomplete="off" spellcheck="false">
+          <label for="setBase">服务地址</label>
+          <input id="setBase" type="url" autocomplete="off" spellcheck="false">
         </div>
         <div class="field">
-          <label for="setVisionModel">图片模型</label>
-          <input id="setVisionModel" type="text" autocomplete="off" spellcheck="false">
+          <label for="setKey">访问密钥</label>
+          <input id="setKey" type="password" autocomplete="off" spellcheck="false" placeholder="已设置，留空则不修改">
         </div>
-      </div>
-      <div class="inline-actions">
-        <button id="testConn" class="btn btn-ghost">测试连接</button>
-        <button id="saveSettings" class="btn btn-primary">保存</button>
-      </div>
-      <div id="connResult" class="hint"></div>
+        <div class="field-row">
+          <div class="field">
+            <label for="setTextModel">文本模型</label>
+            <input id="setTextModel" type="text" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="setVisionModel">图片模型</label>
+            <input id="setVisionModel" type="text" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+        <div class="inline-actions">
+          <button id="testConn" class="btn btn-ghost">测试连接</button>
+          <button id="saveSettings" class="btn btn-primary">保存</button>
+        </div>
+        <div id="connResult" class="hint"></div>
+        <div id="bridgeStatus" class="hint"></div>
+      </details>
+      <div id="themeRow" class="cites" style="margin-top:8px"></div>
     </section>
 
     <section class="settings-group">
@@ -189,7 +195,7 @@
     <div class="composer-inner">
       <button id="attachBtn" class="round-btn" aria-label="添加材料"><svg class="ic"><use href="#i-plus"/></svg></button>
       <div class="input-shell">
-        <textarea id="textInput" rows="1" placeholder="说说你的情况，也可以说「先给我个结论」" enterkeyhint="send"></textarea>
+        <textarea id="textInput" rows="1" maxlength="2000" placeholder="说说你的情况，也可以说「先给我个结论」" enterkeyhint="send"></textarea>
       </div>
       <button id="micBtn" class="round-btn" aria-label="语音输入"><svg class="ic"><use href="#i-mic"/></svg></button>
       <button id="sendBtn" class="send-btn" aria-label="发送" disabled><svg class="ic"><use href="#i-send"/></svg></button>
@@ -213,6 +219,7 @@
     <div class="voice-card">
       <div class="voice-wave"><i></i><i></i><i></i><i></i><i></i></div>
       <div class="voice-time" id="voiceTime">00:00</div>
+      <div style="width:180px;height:4px;background:rgba(255,255,255,.25);border-radius:2px;overflow:hidden;margin:8px auto 0"><i id="voiceMeter" style="display:block;height:100%;width:0;background:#fff;border-radius:2px;transition:width .12s"></i></div>
       <div class="voice-hint">正在录音，说完点"完成"</div>
       <div class="voice-actions">
         <button id="voiceCancel" class="btn btn-ghost">取消</button>
@@ -227,6 +234,7 @@
       <div class="sheet-grip"></div>
       <h3 class="sheet-title">确认你说的内容</h3>
       <p class="sheet-desc">名字、公司、日期容易听错，改好再提交。</p>
+      <audio id="transcriptAudio" controls style="width:100%;margin-bottom:8px;display:none"></audio>
       <textarea id="transcript" class="sheet-textarea" rows="5"></textarea>
       <div class="sheet-actions">
         <button id="transcriptRetry" class="btn btn-ghost">重录</button>
@@ -247,10 +255,8 @@
     </div>
   </div>
 
-  <div id="toast" class="toast" hidden></div>
+  <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
 </div>
-<script src="/vendor/html2canvas.min.js"></script>
-<script src="/vendor/jspdf.umd.min.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

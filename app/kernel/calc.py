@@ -94,6 +94,10 @@ def calc_all(slots: dict, city: dict, today: date | None = None,
     sy = service_years(slots.get("start_date"), slots.get("end_date"))
     avg = float(slots.get("avg_wage") or 0)
     types = set(slots.get("dispute_types") or [])
+    min_w = p.get("min_wage_monthly")
+    if avg and min_w and avg < min_w:
+        r.notes.append(f"注意：你说的月薪 {avg:.0f} 元低于{city['city']}最低工资标准 {min_w} 元——"
+                       "低于最低工资本身违法，可向劳动保障监察投诉（12333）或一并仲裁")
     by = slots.get("termination_by")
     termination = termination or {}
 
@@ -119,12 +123,14 @@ def calc_all(slots: dict, city: dict, today: date | None = None,
                 illegal = False
             else:   # uncertain：无解除合法性的实体证据时按违法口径评估，由单位举证
                 illegal = not slots.get("termination_evidence")
+                r.notes.append("解除对错说不清时，先按违法口径评估——举证责任在单位：让它拿出解除依据，拿不出就是 2N")
             r.add("n_or_2n", "经济补偿 N（备选）", n_amount, "laodonghetongfa:47",
                   f"工作年限 {sy.label} → 计 {years_for_n} 个月 × {base:.0f} 元",
                   primary=not illegal, group="termination")
             r.add("2n", "违法解除赔偿金 2N", n_amount * 2, "laodonghetongfa:87",
                   "单位解除且无合法事由时，按第 47 条标准的两倍支付",
                   primary=illegal, group="termination")
+            r.notes.append("N 与 2N 不能同时主张：违法解除按 2N，合法解除才按 N，裁决时择一")
             if illegal:
                 why = (termination.get("legality_reason") or "解除理由缺乏可成立的实体依据").rstrip("。；;，, ")
                 r.notes.append(f"解除合法性评估：{why}，按 2N 评估")
@@ -135,8 +141,8 @@ def calc_all(slots: dict, city: dict, today: date | None = None,
                       "以单位未足额支付报酬/未缴社保等第 38 条事由解除，仍可主张 N："
                       + (termination.get("resign_ground_reason") or ""))
             else:
-                r.add("n_amount_0", "经济补偿（个人原因辞职）", 0.0, "laodonghetongfa:37",
-                      "劳动者主动辞职且非第 38 条事由，原则上无经济补偿")
+                r.notes.append("个人原因辞职通常没有经济补偿（《劳动合同法》第 37/46 条）；"
+                               "如果是公司先逼你走的——拖欠工资、调岗降薪、不缴社保——那是第 38 条被迫解除，照样有 N，告诉我公司做了什么")
         elif by == "mutual":
             r.add("n_amount_mutual", "协商一致解除经济补偿 N", n_amount,
                   "laodonghetongfa:36;laodonghetongfa:46", "单位提出、协商一致解除，支付 N")
@@ -152,6 +158,8 @@ def calc_all(slots: dict, city: dict, today: date | None = None,
     if "no_contract" in types and avg and slots.get("contract_state") == "none":
         start = _d(slots.get("start_date"))
         end = _d(slots.get("end_date")) or today or date.today()
+        if not start:
+            r.notes.append("入职日期未确认，二倍工资的起算窗口算不出来——补上入职日期后自动补全")
         if start:
             from datetime import timedelta
             begin = start + timedelta(days=30)
@@ -179,11 +187,16 @@ def calc_all(slots: dict, city: dict, today: date | None = None,
             hourly = avg / 21.75 / 8
             r.add("overtime", "加班费（按已确认加班小时）", hourly * float(hours) * 1.5,
                   "laodongfa:44", f"{hours} 小时 × 时薪 {hourly:.2f} × 1.5（工作日加班口径）")
+            r.notes.append("加班倍数提醒：休息日加班 2 倍、法定节假日 3 倍，与工作日 1.5 倍分开举证；"
+                           "考勤、排班表、加班审批记录是关键证据")
         else:
             r.notes.append("加班时长未确认，本次不计算加班费金额，只给举证与主张路径")
 
     # 4) 未休年休假
     if "annual_leave" in types and avg:
+        if not slots.get("unused_leave_days"):
+            r.notes.append("年假天数按累计工龄定：满 1 年不满 10 年 5 天、满 10 年不满 20 年 10 天、满 20 年 15 天；"
+                           "说下没休的天数就能算")
         days = slots.get("unused_leave_days")
         if days:
             r.add("annual_leave", "未休年休假工资", avg / 21.75 * float(days) * 2,
